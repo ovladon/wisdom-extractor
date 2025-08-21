@@ -1,0 +1,264 @@
+# Cross-cultural interpretation (offline; deterministic)
+
+**How to read this report.** ‘Coverage’ = number of distinct peoples in the cluster. Strings like ‘Europe (SE) (1/3; 33%)’ mean: among the 3 covered peoples, 1 is in ‘Europe (SE)’ (33%). Counts for families/climates/legal/etc. are descriptive summaries, not causal claims.
+
+## Cooperation / Social Support
+
+- **Claim:** Heaven helps those who help themselves.
+  - Coverage: 13 peoples; Support: 15 instances; Wisdom score: 17.5
+  - Regions/Families/Climates: Europe (SE) (3/13; 23%), Europe (Central) (2/13; 15%), Europe (NE) (2/13; 15%) / Indo-European · Slavic (4/13; 31%), Indo-European · Romance (3/13; 23%), Uralic (2/13; 15%) / Continental (5/13; 38%), Mediterranean (2/13; 15%), Continental/Mediterranean (1/13; 8%)
+  - Coastal/Island/Maritime: N (8/13; 62%), Partial (4/13; 31%) / N (12/13; 92%) / Low (8/13; 62%), Med (4/13; 31%)
+  - Trade/Migration: nan (8/13; 62%), Atlantic (2/13; 15%), Mediterranean (2/13; 15%) / Med (12/13; 92%)
+  - Subsistence/Staple: Agriculture (12/13; 92%) / Mixed (9/13; 69%), Wheat (3/13; 23%)
+  - Legal/Urban: Mixed (8/13; 62%), CivilLaw (4/13; 31%) / Med (8/13; 62%), High (4/13; 31%)
+  - Individualism/Uncertainty: Med (11/13; 85%), High (1/13; 8%) / Med (8/13; 62%), High (4/13; 31%)
+
+_Reading:_ Cooperation / Social Support varies with ecological/institutional signals above—for example, maritime exchange often aligns with cooperation/trust motifs; aridity or steppe conditions lean toward prudence and kinship obligation (descriptive, not causal).
+
+## Prudence / Risk & Uncertainty
+
+- **Claim:** Prefer late over never..
+  - Coverage: 13 peoples; Support: 14 instances; Wisdom score: 17.2
+  - Regions/Families/Climates: Europe (Central) (3/13; 23%), Europe (N) (2/13; 15%), Europe (SE) (1/13; 8%) / Indo-European · Slavic (5/13; 38%), Indo-European · Germanic (4/13; 31%), Indo-European · Romance (3/13; 23%) / Continental (3/13; 23%), Maritime/Temperate (2/13; 15%), Temperate/Continental (2/13; 15%)
+  - Coastal/Island/Maritime: N (8/13; 62%), Partial (4/13; 31%) / N (12/13; 92%) / Low (8/13; 62%), Med (4/13; 31%)
+  - Trade/Migration: nan (8/13; 62%), Atlantic (3/13; 23%), Mediterranean (1/13; 8%) / Med (12/13; 92%)
+  - Subsistence/Staple: Agriculture (12/13; 92%) / Mixed (9/13; 69%), Wheat (3/13; 23%)
+  - Legal/Urban: Mixed (9/13; 69%), CivilLaw (3/13; 23%) / Med (7/13; 54%), High (5/13; 38%)
+  - Individualism/Uncertainty: Med (8/13; 62%), High (4/13; 31%) / Med (6/13; 46%), Low (3/13; 23%), High (3/13; 23%)
+
+- **Claim:** Something you have for certain now is of more value than something better you may get, especially if you risk losing what you have in order to get it.
+  - Coverage: 13 peoples; Support: 14 instances; Wisdom score: 17.2
+  - Regions/Families/Climates: Europe (Central) (4/13; 31%), Europe (SE) (3/13; 23%), Europe (NW) (1/13; 8%) / Indo-European · Slavic (5/13; 38%), Indo-European · Germanic (3/13; 23%), Indo-European · Romance (3/13; 23%) / Continental/Mediterranean (3/13; 23%), Continental (3/13; 23%), Maritime/Temperate (1/13; 8%)
+  - Coastal/Island/Maritime: N (9/13; 69%), Partial (4/13; 31%) / N (13/13; 100%) / Low (9/13; 69%), Med (4/13; 31%)
+  - Trade/Migration: nan (9/13; 69%), Atlantic (4/13; 31%) / Med (13/13; 100%)
+  - Subsistence/Staple: Agriculture (13/13; 100%) / Mixed (10/13; 77%), Wheat (3/13; 23%)
+  - Legal/Urban: Mixed (10/13; 77%), CivilLaw (3/13; 23%) / Med (7/13; 54%), High (6/13; 46%)
+  - Individualism/Uncertainty: Med (10/13; 77%), High (3/13; 23%) / Med (9/13; 69%), High (3/13; 23%), Low (1/13; 8%)
+
+_Reading:_ Prudence / Risk & Uncertainty varies with ecological/institutional signals above—for example, maritime exchange often aligns with cooperation/trust motifs; aridity or steppe conditions lean toward prudence and kinship obligation (descriptive, not causal).
+
+## Effort / Time / Persistence
+
+- **Claim:** Working hard for others one may neglect one's own needs or the needs of those closest to him.
+  - Coverage: 21 peoples; Support: 21 instances; Wisdom score: 27.3
+  - Regions/Families/Climates: Europe (N) (4/21; 19%), Europe (NE) (4/21; 19%), Europe (NW) (3/21; 14%) / Indo-European · Germanic (7/21; 33%), Indo-European · Romance (3/21; 14%), Indo-European · Celtic (3/21; 14%) / Maritime/Temperate (5/21; 24%), Continental (4/21; 19%), Temperate/Maritime (2/21; 10%)
+  - Coastal/Island/Maritime: N (16/21; 76%), Partial (5/21; 24%) / N (21/21; 100%) / Low (16/21; 76%), Med (5/21; 24%)
+  - Trade/Migration: nan (16/21; 76%), Atlantic (4/21; 19%), Mediterranean (1/21; 5%) / Med (21/21; 100%)
+  - Subsistence/Staple: Agriculture (21/21; 100%) / Mixed (18/21; 86%), Wheat (3/21; 14%)
+  - Legal/Urban: Mixed (14/21; 67%), CommonLaw (4/21; 19%), CivilLaw (3/21; 14%) / Med (12/21; 57%), High (9/21; 43%)
+  - Individualism/Uncertainty: Med (14/21; 67%), High (7/21; 33%) / Med (14/21; 67%), Low (4/21; 19%), High (3/21; 14%)
+
+_Reading:_ Effort / Time / Persistence varies with ecological/institutional signals above—for example, maritime exchange often aligns with cooperation/trust motifs; aridity or steppe conditions lean toward prudence and kinship obligation (descriptive, not causal).
+
+## Trust / Honesty / Deception
+
+- **Claim:** Children and fools have no inhibition, and alcohol consumed removes the inhibition against telling the truth that occasionally one would like to keep secret.
+  - Coverage: 13 peoples; Support: 16 instances; Wisdom score: 17.8
+  - Regions/Families/Climates: Europe (SE) (3/13; 23%), Europe (Central) (3/13; 23%), Europe (N) (2/13; 15%) / Indo-European · Slavic (4/13; 31%), Indo-European · Germanic (3/13; 23%), Indo-European · Romance (2/13; 15%) / Continental (4/13; 31%), Temperate/Continental (2/13; 15%), Continental/Mediterranean (1/13; 8%)
+  - Coastal/Island/Maritime: N (9/13; 69%), Partial (3/13; 23%) / N (12/13; 92%) / Low (9/13; 69%), Med (3/13; 23%)
+  - Trade/Migration: nan (8/13; 62%), Atlantic (2/13; 15%), Mediterranean (1/13; 8%) / Med (12/13; 92%)
+  - Subsistence/Staple: Agriculture (12/13; 92%) / Mixed (10/13; 77%), Wheat (2/13; 15%)
+  - Legal/Urban: Mixed (9/13; 69%), CivilLaw (3/13; 23%) / Med (6/13; 46%), High (6/13; 46%)
+  - Individualism/Uncertainty: Med (8/13; 62%), High (3/13; 23%), Low (1/13; 8%) / Med (7/13; 54%), High (3/13; 23%), Low (2/13; 15%)
+
+- **Claim:** A lie has short legs.
+  - Coverage: 12 peoples; Support: 12 instances; Wisdom score: 15.6
+  - Regions/Families/Climates: Europe (Central) (4/12; 33%), Europe (NW) (2/12; 17%), Caucasus/West Asia (1/12; 8%) / Indo-European · Slavic (3/12; 25%), Indo-European · Germanic (3/12; 25%), Uralic (2/12; 17%) / Continental (4/12; 33%), Continental/Mountain (1/12; 8%), Maritime/Temperate (1/12; 8%)
+  - Coastal/Island/Maritime: N (7/12; 58%), Partial (2/12; 17%) / N (9/12; 75%) / Low (7/12; 58%), Med (2/12; 17%)
+  - Trade/Migration: nan (7/12; 58%), Atlantic (2/12; 17%) / Med (9/12; 75%)
+  - Subsistence/Staple: Agriculture (9/12; 75%) / Mixed (9/12; 75%)
+  - Legal/Urban: Mixed (8/12; 67%), CommonLaw (1/12; 8%) / Med (5/12; 42%), High (4/12; 33%)
+  - Individualism/Uncertainty: Med (6/12; 50%), High (3/12; 25%) / Med (7/12; 58%), Low (2/12; 17%)
+
+_Reading:_ Trust / Honesty / Deception varies with ecological/institutional signals above—for example, maritime exchange often aligns with cooperation/trust motifs; aridity or steppe conditions lean toward prudence and kinship obligation (descriptive, not causal).
+
+## Family / Kinship / Obligation
+
+- **Claim:** Sons may look and behave like their fathers. This is due to inheritance and the example observed closely and daily.
+  - Coverage: 27 peoples; Support: 46 instances; Wisdom score: 40.8
+  - Regions/Families/Climates: Europe (Central) (4/27; 15%), Europe (NE) (4/27; 15%), Europe (SE) (3/27; 11%) / Indo-European · Germanic (5/27; 19%), Indo-European · Romance (5/27; 19%), Indo-European · Slavic (4/27; 15%) / Continental (6/27; 22%), Maritime/Temperate (5/27; 19%), Temperate/Continental (3/27; 11%)
+  - Coastal/Island/Maritime: N (19/27; 70%), Partial (6/27; 22%) / N (25/27; 93%) / Low (19/27; 70%), Med (6/27; 22%)
+  - Trade/Migration: nan (18/27; 67%), Atlantic (4/27; 15%), Mediterranean (1/27; 4%) / Med (25/27; 93%)
+  - Subsistence/Staple: Agriculture (24/27; 89%), Pastoralism (1/27; 4%) / Mixed (20/27; 74%), Wheat (5/27; 19%)
+  - Legal/Urban: Mixed (16/27; 59%), CivilLaw (6/27; 22%), CommonLaw (3/27; 11%) / Med (15/27; 56%), High (10/27; 37%)
+  - Individualism/Uncertainty: Med (18/27; 67%), High (5/27; 19%), Low (2/27; 7%) / Med (17/27; 63%), High (5/27; 19%), Low (3/27; 11%)
+
+- **Claim:** Like father, like son.
+  - Coverage: 27 peoples; Support: 27 instances; Wisdom score: 35.1
+  - Regions/Families/Climates: Europe (N) (3/27; 11%), Europe (NE) (3/27; 11%), Europe (W) (3/27; 11%) / Indo-European · Germanic (5/27; 19%), Indo-European · Romance (5/27; 19%), Indo-European · Celtic (3/27; 11%) / Maritime/Temperate (5/27; 19%), Continental (5/27; 19%), Temperate/Continental (3/27; 11%)
+  - Coastal/Island/Maritime: N (18/27; 67%), Partial (6/27; 22%) / N (24/27; 89%) / Low (18/27; 67%), Med (6/27; 22%)
+  - Trade/Migration: nan (17/27; 63%), Atlantic (4/27; 15%), Mediterranean (1/27; 4%) / Med (24/27; 89%)
+  - Subsistence/Staple: Agriculture (23/27; 85%), Pastoralism (1/27; 4%) / Mixed (18/27; 67%), Wheat (5/27; 19%), Rice (1/27; 4%)
+  - Legal/Urban: Mixed (15/27; 56%), CivilLaw (6/27; 22%), CommonLaw (3/27; 11%) / Med (15/27; 56%), High (9/27; 33%)
+  - Individualism/Uncertainty: Med (16/27; 59%), High (5/27; 19%), Low (3/27; 11%) / Med (16/27; 59%), High (5/27; 19%), Low (3/27; 11%)
+
+- **Claim:** Like mother, like daughter.
+  - Coverage: 22 peoples; Support: 23 instances; Wisdom score: 28.9
+  - Regions/Families/Climates: Europe (Central) (4/22; 18%), Europe (SE) (3/22; 14%), Europe (N) (3/22; 14%) / Indo-European · Germanic (5/22; 23%), Indo-European · Romance (5/22; 23%), Indo-European · Slavic (4/22; 18%) / Continental (5/22; 23%), Maritime/Temperate (4/22; 18%), Temperate/Continental (3/22; 14%)
+  - Coastal/Island/Maritime: N (16/22; 73%), Partial (5/22; 23%) / N (21/22; 95%) / Low (16/22; 73%), Med (5/22; 23%)
+  - Trade/Migration: nan (16/22; 73%), Atlantic (4/22; 18%), Mediterranean (1/22; 5%) / Med (21/22; 95%)
+  - Subsistence/Staple: Agriculture (21/22; 95%) / Mixed (16/22; 73%), Wheat (5/22; 23%)
+  - Legal/Urban: Mixed (14/22; 64%), CivilLaw (5/22; 23%), CommonLaw (2/22; 9%) / Med (12/22; 55%), High (9/22; 41%)
+  - Individualism/Uncertainty: Med (16/22; 73%), High (5/22; 23%) / Med (13/22; 59%), High (5/22; 23%), Low (3/22; 14%)
+
+- **Claim:** Barking dogs seldom bite.
+  - Coverage: 19 peoples; Support: 21 instances; Wisdom score: 25.3
+  - Regions/Families/Climates: Europe (Central) (4/19; 21%), Europe (SE) (3/19; 16%), Europe (NW) (2/19; 11%) / Indo-European · Slavic (6/19; 32%), Indo-European · Germanic (4/19; 21%), Indo-European · Romance (4/19; 21%) / Continental/Mediterranean (3/19; 16%), Continental (3/19; 16%), Maritime/Temperate (2/19; 11%)
+  - Coastal/Island/Maritime: N (10/19; 53%), Partial (7/19; 37%) / N (17/19; 89%) / Low (10/19; 53%), Med (7/19; 37%)
+  - Trade/Migration: nan (10/19; 53%), Atlantic (5/19; 26%), Mediterranean (1/19; 5%) / Med (17/19; 89%)
+  - Subsistence/Staple: Agriculture (16/19; 84%), Pastoralism (1/19; 5%) / Mixed (12/19; 63%), Wheat (4/19; 21%), Rice (1/19; 5%)
+  - Legal/Urban: Mixed (11/19; 58%), CivilLaw (5/19; 26%), CommonLaw (1/19; 5%) / Med (11/19; 58%), High (6/19; 32%)
+  - Individualism/Uncertainty: Med (11/19; 58%), High (4/19; 21%), Low (2/19; 11%) / Med (10/19; 53%), High (4/19; 21%), Low (3/19; 16%)
+
+_Reading:_ Family / Kinship / Obligation varies with ecological/institutional signals above—for example, maritime exchange often aligns with cooperation/trust motifs; aridity or steppe conditions lean toward prudence and kinship obligation (descriptive, not causal).
+
+## Fate / Fortune / Opportunity
+
+- **Claim:** Starting properly ensures the speedy completion of a process. A – beginning is often blocked by one or more obstacles (potential barriers) the removal of which may ensure the smooth course of the process.
+  - Coverage: 15 peoples; Support: 15 instances; Wisdom score: 19.5
+  - Regions/Families/Climates: Europe (NW) (3/15; 20%), Europe (SW) (2/15; 13%), Europe (SE) (1/15; 7%) / Indo-European · Romance (2/15; 13%), Indo-European · Germanic (2/15; 13%), Indo-European · Celtic (2/15; 13%) / Maritime/Temperate (3/15; 20%), Continental (3/15; 20%), Mediterranean (2/15; 13%)
+  - Coastal/Island/Maritime: N (10/15; 67%), Partial (4/15; 27%) / N (14/15; 93%) / Low (10/15; 67%), Med (4/15; 27%)
+  - Trade/Migration: nan (9/15; 60%), Atlantic (2/15; 13%), Mediterranean (1/15; 7%) / Med (14/15; 93%)
+  - Subsistence/Staple: Agriculture (13/15; 87%), Pastoralism (1/15; 7%) / Mixed (11/15; 73%), Wheat (2/15; 13%), Rice (1/15; 7%)
+  - Legal/Urban: Mixed (9/15; 60%), CommonLaw (3/15; 20%), CivilLaw (2/15; 13%) / Med (12/15; 80%), High (2/15; 13%)
+  - Individualism/Uncertainty: Med (9/15; 60%), Low (3/15; 20%), High (2/15; 13%) / Med (11/15; 73%), Low (2/15; 13%), High (1/15; 7%)
+
+_Reading:_ Fate / Fortune / Opportunity varies with ecological/institutional signals above—for example, maritime exchange often aligns with cooperation/trust motifs; aridity or steppe conditions lean toward prudence and kinship obligation (descriptive, not causal).
+
+## Other
+
+- **Claim:** Children observe daily and — in their behaviour — often follow the example of their parents.
+  - Coverage: 31 peoples; Support: 34 instances; Wisdom score: 41.2
+  - Regions/Families/Climates: Europe (SE) (5/31; 16%), Europe (Central) (4/31; 13%), Europe (N) (4/31; 13%) / Indo-European · Slavic (8/31; 26%), Indo-European · Romance (6/31; 19%), Indo-European · Germanic (6/31; 19%) / Continental (7/31; 23%), Temperate/Continental (4/31; 13%), Continental/Mediterranean (3/31; 10%)
+  - Coastal/Island/Maritime: N (24/31; 77%), Partial (6/31; 19%) / N (30/31; 97%) / Low (24/31; 77%), Med (6/31; 19%)
+  - Trade/Migration: nan (22/31; 71%), Atlantic (4/31; 13%), SilkRoad (2/31; 6%) / Med (30/31; 97%)
+  - Subsistence/Staple: Agriculture (29/31; 94%), Pastoralism (1/31; 3%) / Mixed (24/31; 77%), Wheat (6/31; 19%)
+  - Legal/Urban: Mixed (24/31; 77%), CivilLaw (6/31; 19%) / Med (21/31; 68%), High (9/31; 29%)
+  - Individualism/Uncertainty: Med (21/31; 68%), High (6/31; 19%), Low (3/31; 10%) / Med (22/31; 71%), High (5/31; 16%), Low (3/31; 10%)
+
+- **Claim:** The apple does not fall far from the tree.
+  - Coverage: 30 peoples; Support: 35 instances; Wisdom score: 40.5
+  - Regions/Families/Climates: Europe (SE) (5/30; 17%), Europe (Central) (4/30; 13%), Europe (N) (4/30; 13%) / Indo-European · Slavic (7/30; 23%), Indo-European · Romance (6/30; 20%), Indo-European · Germanic (6/30; 20%) / Continental (7/30; 23%), Continental/Mediterranean (3/30; 10%), Maritime/Temperate (3/30; 10%)
+  - Coastal/Island/Maritime: N (23/30; 77%), Partial (6/30; 20%) / N (29/30; 97%) / Low (23/30; 77%), Med (6/30; 20%)
+  - Trade/Migration: nan (22/30; 73%), Atlantic (4/30; 13%), Mediterranean (1/30; 3%) / Med (29/30; 97%)
+  - Subsistence/Staple: Agriculture (28/30; 93%), Pastoralism (1/30; 3%) / Mixed (23/30; 77%), Wheat (6/30; 20%)
+  - Legal/Urban: Mixed (22/30; 73%), CivilLaw (6/30; 20%), CommonLaw (1/30; 3%) / Med (19/30; 63%), High (10/30; 33%)
+  - Individualism/Uncertainty: Med (21/30; 70%), High (6/30; 20%), Low (2/30; 7%) / Med (21/30; 70%), High (5/30; 17%), Low (3/30; 10%)
+
+- **Claim:** A bird in the hand is worth two in the bush.
+  - Coverage: 20 peoples; Support: 20 instances; Wisdom score: 26.0
+  - Regions/Families/Climates: Europe (SE) (5/20; 25%), Europe (Central) (4/20; 20%), Europe (NW) (2/20; 10%) / Indo-European · Slavic (6/20; 30%), Indo-European · Germanic (5/20; 25%), Indo-European · Romance (4/20; 20%) / Continental (4/20; 20%), Continental/Mediterranean (3/20; 15%), Temperate/Continental (3/20; 15%)
+  - Coastal/Island/Maritime: N (13/20; 65%), Partial (6/20; 30%) / N (19/20; 95%) / Low (13/20; 65%), Med (6/20; 30%)
+  - Trade/Migration: nan (13/20; 65%), Atlantic (5/20; 25%), Mediterranean (1/20; 5%) / Med (19/20; 95%)
+  - Subsistence/Staple: Agriculture (19/20; 95%) / Mixed (15/20; 75%), Wheat (4/20; 20%)
+  - Legal/Urban: Mixed (13/20; 65%), CivilLaw (5/20; 25%), CommonLaw (1/20; 5%) / Med (12/20; 60%), High (7/20; 35%)
+  - Individualism/Uncertainty: Med (14/20; 70%), High (5/20; 25%) / Med (11/20; 55%), High (5/20; 25%), Low (3/20; 15%)
+
+- **Claim:** All that glitters is not gold.
+  - Coverage: 16 peoples; Support: 19 instances; Wisdom score: 21.7
+  - Regions/Families/Climates: Europe (Central) (3/16; 19%), Europe (SE) (2/16; 12%), Europe (NW) (2/16; 12%) / Indo-European · Slavic (5/16; 31%), Indo-European · Germanic (4/16; 25%), Indo-European · Romance (3/16; 19%) / Continental (3/16; 19%), Continental/Mediterranean (2/16; 12%), Temperate/Maritime (2/16; 12%)
+  - Coastal/Island/Maritime: N (9/16; 56%), Partial (5/16; 31%) / N (14/16; 88%) / Low (9/16; 56%), Med (5/16; 31%)
+  - Trade/Migration: nan (9/16; 56%), Atlantic (5/16; 31%) / Med (14/16; 88%)
+  - Subsistence/Staple: Agriculture (14/16; 88%) / Mixed (11/16; 69%), Wheat (3/16; 19%)
+  - Legal/Urban: Mixed (10/16; 62%), CivilLaw (3/16; 19%), CommonLaw (1/16; 6%) / Med (9/16; 56%), High (5/16; 31%)
+  - Individualism/Uncertainty: Med (10/16; 62%), High (4/16; 25%) / Med (8/16; 50%), Low (3/16; 19%), High (3/16; 19%)
+
+_Reading:_ Other varies with ecological/institutional signals above—for example, maritime exchange often aligns with cooperation/trust motifs; aridity or steppe conditions lean toward prudence and kinship obligation (descriptive, not causal).
+
+## Theme × Context snapshots
+
+**maritime**
+
+- Other: Low (192), Med (79)
+- Family / Kinship / Obligation: Low (63), Med (24)
+- Effort / Time / Persistence: Low (16), Med (5)
+- Fate / Fortune / Opportunity: Low (10), Med (4)
+- Trust / Honesty / Deception: Low (16), Med (5)
+- Cooperation / Social Support: Low (8), Med (4)
+- Prudence / Risk & Uncertainty: Low (17), Med (8)
+
+**trade**
+
+- Other: nan (186), Atlantic (59), Mediterranean (12)
+- Family / Kinship / Obligation: nan (61), Atlantic (17), Mediterranean (4)
+- Effort / Time / Persistence: nan (16), Atlantic (4), Mediterranean (1)
+- Fate / Fortune / Opportunity: nan (9), Atlantic (2), Mediterranean (1)
+- Trust / Honesty / Deception: nan (15), Atlantic (4), Mediterranean (1)
+- Cooperation / Social Support: nan (8), Atlantic (2), Mediterranean (2)
+- Prudence / Risk & Uncertainty: nan (17), Atlantic (7), Mediterranean (1)
+
+**subsistence**
+
+- Other: Agriculture (226), Pastoralism (7)
+- Family / Kinship / Obligation: Agriculture (84), Pastoralism (3)
+- Effort / Time / Persistence: Agriculture (21)
+- Fate / Fortune / Opportunity: Agriculture (13), Pastoralism (1)
+- Trust / Honesty / Deception: Agriculture (21)
+- Cooperation / Social Support: Agriculture (12)
+- Prudence / Risk & Uncertainty: Agriculture (25)
+
+**staple**
+
+- Other: Mixed (205), Wheat (62), Rice (4)
+- Family / Kinship / Obligation: Mixed (66), Wheat (19), Rice (2)
+- Effort / Time / Persistence: Mixed (18), Wheat (3)
+- Fate / Fortune / Opportunity: Mixed (11), Wheat (2), Rice (1)
+- Trust / Honesty / Deception: Mixed (19), Wheat (2)
+- Cooperation / Social Support: Mixed (9), Wheat (3)
+- Prudence / Risk & Uncertainty: Mixed (19), Wheat (6)
+
+**legal**
+
+- Other: Mixed (185), CivilLaw (66), CommonLaw (20)
+- Family / Kinship / Obligation: Mixed (56), CivilLaw (22), CommonLaw (9)
+- Effort / Time / Persistence: Mixed (14), CommonLaw (4), CivilLaw (3)
+- Fate / Fortune / Opportunity: Mixed (9), CommonLaw (3), CivilLaw (2)
+- Trust / Honesty / Deception: Mixed (17), CivilLaw (3), CommonLaw (1)
+- Cooperation / Social Support: Mixed (8), CivilLaw (4)
+- Prudence / Risk & Uncertainty: Mixed (19), CivilLaw (6)
+
+**urban**
+
+- Other: Med (153), High (93)
+- Family / Kinship / Obligation: Med (53), High (34)
+- Effort / Time / Persistence: Med (12), High (9)
+- Fate / Fortune / Opportunity: Med (12), High (2)
+- Trust / Honesty / Deception: Med (11), High (10)
+- Cooperation / Social Support: Med (8), High (4)
+- Prudence / Risk & Uncertainty: Med (14), High (11)
+
+**indiv**
+
+- Other: Med (187), High (68), Low (16)
+- Family / Kinship / Obligation: Med (61), High (19), Low (7)
+- Effort / Time / Persistence: Med (14), High (7)
+- Fate / Fortune / Opportunity: Med (9), Low (3), High (2)
+- Trust / Honesty / Deception: Med (14), High (6), Low (1)
+- Cooperation / Social Support: Med (11), High (1)
+- Prudence / Risk & Uncertainty: Med (18), High (7)
+
+**uncert**
+
+- Other: Med (170), High (59), Low (42)
+- Family / Kinship / Obligation: Med (56), High (19), Low (12)
+- Effort / Time / Persistence: Med (14), Low (4), High (3)
+- Fate / Fortune / Opportunity: Med (11), Low (2), High (1)
+- Trust / Honesty / Deception: Med (14), Low (4), High (3)
+- Cooperation / Social Support: Med (8), High (4)
+- Prudence / Risk & Uncertainty: Med (15), High (6), Low (4)
+
+## Testable hypotheses
+
+H1 Seasonality: Monsoon/Mediterranean groups emphasise prudence/effort motifs more than maritime-temperate groups.
+
+H2 Maritime exchange: Coastal/maritime groups weight cooperation/trust motifs stronger than inland groups.
+
+H3 Pastoralism: Steppe/arid groups emphasise kinship/obligation more than settled agriculturalists.
+
+H4 Staple ecology: Rice regions emphasise coordination/cooperation more than wheat regions.
+
+H5 Legal origin: Common-law heritage aligns with trust/cooperation motifs more than civil law (exploratory).
+
+H6 Urbanisation: High-urban groups stress time/efficiency more than low-urban groups.
+
+H7 Value proxies: Low-individualism / high-uncertainty-avoidance correlate with prudence/obedience motifs.

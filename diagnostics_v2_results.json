@@ -1,0 +1,209 @@
+{
+  "clean_rows_total": 26170,
+  "rows_entering_clustering": 26170,
+  "n_clusters_tau_0.35": 20537,
+  "sum_support_equals_rows": true,
+  "silhouette_proverb_level_sampled": 0.1253862828016281,
+  "compactness_mean_intracluster_cosine_dist": 0.1443040519952774,
+  "clusters_with_2plus_members": 2438,
+  "top10_coverage_tau_0.35": [
+    31,
+    30,
+    27,
+    27,
+    22,
+    21,
+    20,
+    19,
+    16,
+    16
+  ],
+  "top10_claims": [
+    "Children observe daily and — in their behaviour — often follow the example of their parents.",
+    "The apple does not fall far from the tree.",
+    "Like father, like son.",
+    "Sons may look and behave like their fathers. This is due to inheritance and the example observed closely and daily.",
+    "Like mother, like daughter.",
+    "Working hard for others one may neglect one's own needs or the needs of those closest to him.",
+    "A bird in the hand is worth two in the bush.",
+    "Barking dogs seldom bite.",
+    "All that glitters is not gold.",
+    "Men are like fish; the great ones devour the small."
+  ],
+  "stability_top10_retained": 1.0,
+  "n_clusters_tau_0.25": 21421,
+  "top10_coverage_tau_0.25": [
+    31,
+    29,
+    27,
+    27,
+    22,
+    21,
+    20,
+    18,
+    16,
+    15
+  ],
+  "spearman_theme_x_proxy": {
+    "Cooperation / Social Support~maritime_orientation": {
+      "rho": 0.198,
+      "p": 0.0128,
+      "n": 157
+    },
+    "Effort / Time / Persistence~maritime_orientation": {
+      "rho": 0.17,
+      "p": 0.033,
+      "n": 157
+    },
+    "Family / Kinship / Obligation~maritime_orientation": {
+      "rho": 0.181,
+      "p": 0.0231,
+      "n": 157
+    },
+    "Fate / Fortune / Opportunity~maritime_orientation": {
+      "rho": 0.172,
+      "p": 0.0312,
+      "n": 157
+    },
+    "Knowledge / Speech / Silence~maritime_orientation": {
+      "rho": 0.208,
+      "p": 0.0091,
+      "n": 157
+    },
+    "Other~maritime_orientation": {
+      "rho": 0.145,
+      "p": 0.0703,
+      "n": 157
+    },
+    "Prudence / Risk & Uncertainty~maritime_orientation": {
+      "rho": 0.179,
+      "p": 0.0246,
+      "n": 157
+    },
+    "Trust / Honesty / Deception~maritime_orientation": {
+      "rho": 0.216,
+      "p": 0.0065,
+      "n": 157
+    },
+    "Cooperation / Social Support~urbanization_level": {
+      "rho": 0.403,
+      "p": 0.0,
+      "n": 157
+    },
+    "Effort / Time / Persistence~urbanization_level": {
+      "rho": 0.396,
+      "p": 0.0,
+      "n": 157
+    },
+    "Family / Kinship / Obligation~urbanization_level": {
+      "rho": 0.413,
+      "p": 0.0,
+      "n": 157
+    },
+    "Fate / Fortune / Opportunity~urbanization_level": {
+      "rho": 0.395,
+      "p": 0.0,
+      "n": 157
+    },
+    "Knowledge / Speech / Silence~urbanization_level": {
+      "rho": 0.381,
+      "p": 0.0,
+      "n": 157
+    },
+    "Other~urbanization_level": {
+      "rho": 0.4,
+      "p": 0.0,
+      "n": 157
+    },
+    "Prudence / Risk & Uncertainty~urbanization_level": {
+      "rho": 0.43,
+      "p": 0.0,
+      "n": 157
+    },
+    "Trust / Honesty / Deception~urbanization_level": {
+      "rho": 0.347,
+      "p": 0.0,
+      "n": 157
+    },
+    "Cooperation / Social Support~individualism_proxy": {
+      "rho": 0.219,
+      "p": 0.0058,
+      "n": 157
+    },
+    "Effort / Time / Persistence~individualism_proxy": {
+      "rho": 0.204,
+      "p": 0.0105,
+      "n": 157
+    },
+    "Family / Kinship / Obligation~individualism_proxy": {
+      "rho": 0.199,
+      "p": 0.0125,
+      "n": 157
+    },
+    "Fate / Fortune / Opportunity~individualism_proxy": {
+      "rho": 0.17,
+      "p": 0.0337,
+      "n": 157
+    },
+    "Knowledge / Speech / Silence~individualism_proxy": {
+      "rho": 0.217,
+      "p": 0.0062,
+      "n": 157
+    },
+    "Other~individualism_proxy": {
+      "rho": 0.182,
+      "p": 0.0228,
+      "n": 157
+    },
+    "Prudence / Risk & Uncertainty~individualism_proxy": {
+      "rho": 0.186,
+      "p": 0.0195,
+      "n": 157
+    },
+    "Trust / Honesty / Deception~individualism_proxy": {
+      "rho": 0.256,
+      "p": 0.0012,
+      "n": 157
+    },
+    "Cooperation / Social Support~uncertainty_avoidance_proxy": {
+      "rho": 0.083,
+      "p": 0.3021,
+      "n": 157
+    },
+    "Effort / Time / Persistence~uncertainty_avoidance_proxy": {
+      "rho": 0.085,
+      "p": 0.2916,
+      "n": 157
+    },
+    "Family / Kinship / Obligation~uncertainty_avoidance_proxy": {
+      "rho": 0.078,
+      "p": 0.3318,
+      "n": 157
+    },
+    "Fate / Fortune / Opportunity~uncertainty_avoidance_proxy": {
+      "rho": 0.1,
+      "p": 0.2141,
+      "n": 157
+    },
+    "Knowledge / Speech / Silence~uncertainty_avoidance_proxy": {
+      "rho": 0.079,
+      "p": 0.3237,
+      "n": 157
+    },
+    "Other~uncertainty_avoidance_proxy": {
+      "rho": 0.079,
+      "p": 0.3245,
+      "n": 157
+    },
+    "Prudence / Risk & Uncertainty~uncertainty_avoidance_proxy": {
+      "rho": 0.08,
+      "p": 0.3208,
+      "n": 157
+    },
+    "Trust / Honesty / Deception~uncertainty_avoidance_proxy": {
+      "rho": 0.087,
+      "p": 0.2809,
+      "n": 157
+    }
+  }
+}
