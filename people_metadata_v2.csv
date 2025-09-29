@@ -1,0 +1,4 @@
+people,region,language_family,climate_zone,coastal,is_island,maritime_orientation,trade_route_proximity,migration_hub,subsistence_bias,staple_crop,legal_origin,urbanization_level,individualism_proxy,uncertainty_avoidance_proxy
+English,Europe (NW),Germanic,Temperate,High,No,High,High,Med,Mixed,Wheat,Common Law,High,High,Med
+Romanian,Europe (SE),Romance,Temperate-Continental,Med,No,Med,Med,Low,Mixed,Wheat,Civil Law,Med,Med,Med
+Japanese,East Asia,Japonic,Temperate-Humid,High,Yes,High,High,High,Mixed,Rice,Civil Law,High,Collectivist,High

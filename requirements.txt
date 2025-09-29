@@ -1,0 +1,20 @@
+streamlit>=1.33
+pandas>=2.0
+numpy>=1.24
+scikit-learn>=1.4
+matplotlib>=3.8
+beautifulsoup4>=4.12
+lxml>=5.2
+requests>=2.31
+PyYAML>=6.0
+umap-learn>=0.5
+packaging>=24.0
+llama-cpp-python>=0.2.80
+huggingface_hub>=0.23
+scipy>=1.10
+
+# New dependencies for enhanced features
+sentence-transformers>=2.2.2
+networkx>=3.0
+transformers>=4.30.0
+torch>=2.0.0
