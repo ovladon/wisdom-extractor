@@ -1,9 +1,10 @@
-import time, re, json, os, pandas as pd, yaml, requests
+
+import time, re, os, pandas as pd, yaml, requests
 from bs4 import BeautifulSoup
 import datetime as dt
 from proverbs_cleaner import clean_dataframe
 
-HEADERS = {"User-Agent":"WisdomExtractor/0.4 (research; polite; contact: you@example.com)"}
+HEADERS = {"User-Agent":"WisdomExtractor/0.5 (research; polite; contact: you@example.com)"}
 STOP_IDS = {"References","External_links","See_also","External_links_and_references"}
 
 def _is_in_stopped_section(node):
@@ -89,7 +90,7 @@ def scrape_gutenberg_html(url, people, sleep=1.0):
         if len(ln.split()) < 3 or len(ln.split()) > 20: continue
         if re.search(r"(?i)\b(Contents|Index|CHAPTER|ADVERTISEMENT|Publisher|London:|Copyright|Project Gutenberg)\b", ln):
             continue
-        if re.search(r"[.!?;,:]", ln):
+        if re.search(r"[.!?;:]", ln):
             items.append(ln)
     rows = []
     now = time.strftime("%Y-%m-%d")
@@ -103,10 +104,9 @@ def scrape_internet_archive_html(url, people, sleep=1.0):
     r.raise_for_status()
     soup = BeautifulSoup(r.text, "lxml")
     items = []
-    # Best effort; many IA items expose OCR/plain text links; we keep robust fallback.
     for li in soup.select("li"):
         t = li.get_text(" ", strip=True)
-        if t and len(t.split()) > 3 and re.search(r"[.!?;,:]", t):
+        if t and len(t.split()) > 3 and re.search(r"[.!?;:]", t):
             items.append(t)
     rows = []
     now = time.strftime("%Y-%m-%d")
@@ -153,11 +153,10 @@ def build_from_sources(sources_yaml_path, selected_people=None, selected_types=N
         all_df = pd.DataFrame(columns=["people","original","saying","english_equivalent","source_title","source_url","accessed"])
     return all_df
 
-def merge_and_clean(uploaded_frames, scrapped_df, use_ai=False, model_path='auto'):
-    from proverbs_cleaner import clean_dataframe
+def merge_and_clean(uploaded_frames, scraped_df, use_ai=False, model_path='auto'):
     frames = [f for f in uploaded_frames if f is not None]
-    if scrapped_df is not None and not scrapped_df.empty:
-        frames.append(scrapped_df)
+    if scraped_df is not None and not scraped_df.empty:
+        frames.append(scraped_df)
     if not frames:
         return pd.DataFrame(columns=["people","original","saying","english_equivalent","source_title","source_url","accessed"]), pd.DataFrame()
     raw = pd.concat(frames, ignore_index=True)
@@ -174,7 +173,7 @@ def merge_and_clean(uploaded_frames, scrapped_df, use_ai=False, model_path='auto
         import re
         t = str(row.get("basis") or row.get("saying") or "")
         score = 0
-        if re.search(r"[.!?;,:]", t): score += 2
+        if re.search(r"[.!?;:]", t): score += 2
         if re.search(r"(?i)\b(if|then|never|always|should|must|avoid|prefer|time|practice|friend|truth|honesty|fortune|blood|work)\b", t): score += 2
         if len(t.split()) >= 5: score += 1
         if len(t) >= 20: score += 1

@@ -1,5 +1,6 @@
+
 import json, pandas as pd, re
-from collections import Counter, defaultdict
+from collections import Counter
 
 THEMES = [
   ("Cooperation / Social Support", ["cooperat","together","friend","help","union","many hands","community","neighbor","neighbour"]),
@@ -39,6 +40,7 @@ def summarize(clusters_path, metadata_path, out_path):
     meta = pd.read_csv(metadata_path)
     enriched = []
     for c in data:
+        regs=fams=clims=coast=isl=mar=trade=migr=subs=stap=legal=urban=indiv=unc = []
         regs, fams, clims, coast, isl, mar, trade, migr, subs, stap, legal, urban, indiv, unc = ([] for _ in range(14))
         for peep in c.get("cultures", []):
             m = meta[meta["people"].str.lower() == str(peep).lower()]
@@ -67,38 +69,15 @@ def summarize(clusters_path, metadata_path, out_path):
 
     enriched.sort(key=lambda c: (-c.get("coverage",0), -c.get("support",0)))
     top = enriched[:30]
-
-    def cross_tab(factor):
-        from collections import defaultdict, Counter
-        T = defaultdict(Counter)
-        for c in top:
-            T[c["theme"]][c[factor]] += 1
-        lines = []
-        import re as _re
-        for theme, combos in T.items():
-            agg = Counter()
-            for comb, cnt in combos.items():
-                for piece in [p.strip() for p in comb.split(",")]:
-                    m = _re.search(r"(.+?)\s*\((\d+)/(\d+);\s*(\d+)%\)", piece)
-                    if m:
-                        agg[m.group(1)] += int(m.group(2))
-            if agg:
-                s = ", ".join([f"{k} ({v})" for k,v in agg.most_common(3)])
-                lines.append(f"- {theme}: {s}")
-        return "\n".join(lines)
-
     sections = []
     sections.append("# Cross-cultural interpretation (offline; deterministic)")
-    sections.append("**How to read this report.** ‘Coverage’ = number of distinct peoples in the cluster. "
-                    "Strings like ‘Europe (SE) (1/3; 33%)’ mean: among the 3 covered peoples, 1 is in ‘Europe (SE)’ (33%). "
-                    "Counts for families/climates/legal/etc. are descriptive summaries, not causal claims.")
-
-    from itertools import islice
+    sections.append("**How to read this report.** ‘Coverage’ = number of distinct peoples. "
+                    "‘Europe (SE) (1/3; 33%)’ ⇒ among 3 covered peoples, 1 is in Europe (SE). Percentages are descriptive, not causal.")
     for theme, _ in THEMES + [("Other", [])]:
         themelist = [c for c in top if c["theme"]==theme]
         if not themelist: continue
         sections.append(f"## {theme}")
-        for c in islice(themelist, 0, 4):
+        for c in themelist[:4]:
             sections.append(
                 f"- **Claim:** {c['claim']}\n"
                 f"  - Coverage: {c.get('coverage',0)} peoples; Support: {c.get('support',0)} instances; Wisdom score: {c.get('wisdom_score','-')}\n"
@@ -109,41 +88,9 @@ def summarize(clusters_path, metadata_path, out_path):
                 f"  - Legal/Urban: {c['t_legal']} / {c['t_urban']}\n"
                 f"  - Individualism/Uncertainty: {c['t_indiv']} / {c['t_uncert']}"
             )
-        sections.append(f"_Reading:_ {theme} varies with ecological/institutional signals above—for example, maritime exchange often aligns with cooperation/trust motifs; aridity or steppe conditions lean toward prudence and kinship obligation (descriptive, not causal).")
-
-    sections.append("## Theme × Context snapshots")
-    for factor in ["t_maritime","t_trade","t_subsistence","t_staple","t_legal","t_urban","t_indiv","t_uncert"]:
-        sections.append(f"**{factor.replace('t_','').replace('_','/')}**")
-        sections.append(cross_tab(factor) or "(sparse)")
-
-    contradictions = []
-    for c in top:
-        a = c["claim"].lower()
-        if "many hands" in a or "cooperation" in a:
-            for d in top:
-                b = d["claim"].lower()
-                if "too many" in b or "spoil" in b:
-                    contradictions.append((c["claim"], d["claim"])); break
-    if contradictions:
-        sections.append("## Contextual contradictions")
-        for a,b in contradictions[:3]:
-            sections.append(f"- **Tension:** “{a}” vs “{b}”. Threshold effects: gains from division-of-labour vs coordination overhead.")
-
-    sections.append("## Testable hypotheses")
-    sections += [
-        "H1 Seasonality: Monsoon/Mediterranean groups emphasise prudence/effort motifs more than maritime-temperate groups.",
-        "H2 Maritime exchange: Coastal/maritime groups weight cooperation/trust motifs stronger than inland groups.",
-        "H3 Pastoralism: Steppe/arid groups emphasise kinship/obligation more than settled agriculturalists.",
-        "H4 Staple ecology: Rice regions emphasise coordination/cooperation more than wheat regions.",
-        "H5 Legal origin: Common-law heritage aligns with trust/cooperation motifs more than civil law (exploratory).",
-        "H6 Urbanisation: High-urban groups stress time/efficiency more than low-urban groups.",
-        "H7 Value proxies: Low-individualism / high-uncertainty-avoidance correlate with prudence/obedience motifs.",
-    ]
-
     text = "\n\n".join(sections)
     open(out_path,"w",encoding="utf-8").write(text)
     ej = out_path.replace(".txt","_enriched.json")
-    import json as _json
     with open(ej,"w",encoding="utf-8") as f:
-        _json.dump(enriched, f, ensure_ascii=False, indent=2)
+        json.dump(enriched, f, ensure_ascii=False, indent=2)
     return out_path

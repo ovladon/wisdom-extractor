@@ -1,0 +1,14 @@
+name: Feature request
+description: Propose an enhancement
+title: "[Feat] "
+labels: ["enhancement"]
+body:
+  - type: textarea
+    attributes:
+      label: Problem statement
+  - type: textarea
+    attributes:
+      label: Proposed solution
+  - type: textarea
+    attributes:
+      label: Alternatives

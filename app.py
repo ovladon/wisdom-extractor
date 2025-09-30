@@ -1,212 +1,385 @@
 import streamlit as st
 import pandas as pd, json, os
 from dataset_builder import build_from_sources, merge_and_clean
-from extractor import run as run_extractor
+from extractor import run_enhanced as run_extractor_enhanced  # Updated import
 from interpret_v2 import summarize as run_interpret_det
 from interpret_llm import run_llm as run_interpret_llm, build_summary_from_text, ensure_default_model
-import matplotlib.pyplot as plt
+from diagnostics import compute_practical_diagnostics, compute_trust_score  # Updated import
+from simple_validation import add_simple_validation_tab  # New import
 
-st.set_page_config(page_title="Wisdom Extractor v7.7", layout="wide")
-st.title("🧭 Wisdom Extractor v7.7")
-st.caption("Dataset builder → Wisdom extraction → Results & visualisation → Interpretation (no APIs; optional local LLM) → Diagnostics")
+st.set_page_config(page_title="Wisdom Extractor v8 - Improved", layout="wide")
+st.title("Wisdom Extractor v8 - Improved")
+st.caption("Realistic improvements: better preprocessing, adaptive clustering, simple validation, actionable diagnostics")
 
 with st.sidebar:
     st.header("Settings")
     data_path = st.text_input("Dataset CSV path", value="proverbs_clean_v2.csv")
     meta_path = st.text_input("People metadata CSV", value="people_metadata_v2.csv")
     sources_path = st.text_input("Sources YAML", value="sources.yaml")
+    
     st.markdown("---")
-    st.markdown("**Tip:** Use the tabs to go step by step.")
+    st.markdown("**Key Improvements:**")
+    st.write("• Better text normalization and canonicalization")
+    st.write("• Adaptive distance threshold selection")
+    st.write("• Language family diversity scoring")
+    st.write("• Simple validation interface")
+    st.write("• Actionable diagnostic recommendations")
 
-tabs = st.tabs(["1) Dataset Builder", "2) Wisdom Extractor", "3) Results & Visualisation", "4) Interpretation", "5) Diagnostics"])
+tabs = st.tabs(["1) Dataset Builder", "2) Improved Extractor", "3) Results & Analysis", 
+                "4) Quick Validation", "5) Interpretation", "6) Practical Diagnostics"])
 
 with tabs[0]:
+    # Dataset Builder - unchanged but with better progress feedback
     st.subheader("Build or extend a dataset")
-    st.write("Upload your own CSVs and/or fetch from multiple public sources. We preserve originals and provenance, then clean and deduplicate.")
+    
     c1, c2 = st.columns(2)
     with c1:
-        st.markdown("**Upload existing CSVs** (they will be concatenated):")
-        up = st.file_uploader("Upload one or more CSVs", type=["csv"], accept_multiple_files=True, key="uploader")
+        st.markdown("**Upload existing CSVs**")
+        up = st.file_uploader("Upload one or more CSVs", type=["csv"], accept_multiple_files=True)
         uploaded_frames = []
         if up:
             for f in up:
-                df = pd.read_csv(f)
-                uploaded_frames.append(df)
-                st.write(f"Loaded: {f.name} → {df.shape[0]} rows")
+                try:
+                    df = pd.read_csv(f)
+                    uploaded_frames.append(df)
+                    st.success(f"Loaded: {f.name} - {df.shape[0]} rows")
+                except Exception as e:
+                    st.error(f"Could not read {f.name}: {e}")
+    
     with c2:
-        st.markdown("**Fetch from public sources** (polite; CC BY-SA/PD; provenance saved):")
+        st.markdown("**Fetch from public sources**")
         try:
             import yaml
             srcs = yaml.safe_load(open(sources_path, "r", encoding="utf-8"))
-            people_list = sorted(set([s["people"] for s in srcs]))
+            people_list = sorted(set([s.get("people","") for s in srcs]))
             type_list = sorted(set([s.get("type","wikiquote") for s in srcs]))
         except Exception as e:
             st.warning(f"Could not read {sources_path}: {e}")
             people_list, type_list = [], []
-        select_all_people = st.checkbox("Select all peoples", value=True)
-        default_people = people_list if select_all_people else []
-        sel_people = st.multiselect("Pick peoples to fetch", options=people_list, default=default_people)
-        sel_types = st.multiselect("Pick source types", options=type_list, default=type_list)
-        sleep = st.slider("Delay between requests (seconds)", 0.2, 5.0, 1.0, 0.2)
-        use_ai = st.checkbox("Use offline AI to refine proverb detection (if local model available)", value=False)
-        ai_model = st.text_input("AI model path for filtering ('.gguf' or 'auto')", value="auto")
-        scraped_df = None
-        if st.button("🌐 Fetch selected"):
-            scraped_df = build_from_sources(sources_path, selected_people=sel_people, selected_types=sel_types, sleep=sleep, save_dir="runs")
-            st.success(f"Fetched {scraped_df.shape[0]} raw rows (also saved per-source CSVs under ./runs).")
-            st.dataframe(scraped_df.head(20))
-            st.session_state["scraped_df"] = scraped_df.to_dict(orient="list")
-        elif "scraped_df" in st.session_state:
-            scraped_df = pd.DataFrame(st.session_state["scraped_df"])
+        
+        # Better selection interface
+        col_a, col_b = st.columns(2)
+        with col_a:
+            select_all = st.checkbox("Select all peoples", value=False)
+            n_selected = st.slider("Number to select", 1, min(20, len(people_list)), 5)
+        
+        with col_b:
+            if select_all:
+                sel_people = people_list
+            else:
+                # Smart default selection - mix of major and diverse languages
+                major_langs = ['English', 'Chinese', 'Spanish', 'Arabic', 'Hindi', 'French', 'Russian', 'Japanese']
+                defaults = [p for p in people_list if p in major_langs][:n_selected//2]
+                others = [p for p in people_list if p not in major_langs][:n_selected-len(defaults)]
+                default_selection = defaults + others
+                sel_people = st.multiselect("Selected peoples", people_list, default=default_selection)
+        
+        sel_types = st.multiselect("Source types", type_list, default=type_list[:2])
+        sleep = st.slider("Delay (seconds)", 0.5, 3.0, 1.0, 0.5)
+        
+        if st.button("Fetch Selected Sources"):
+            if not sel_people:
+                st.warning("Please select at least one people group")
+            else:
+                with st.spinner(f"Fetching from {len(sel_people)} sources..."):
+                    scraped_df = build_from_sources(sources_path, selected_people=sel_people, 
+                                                  selected_types=sel_types, sleep=sleep, save_dir="runs")
+                    st.success(f"Fetched {scraped_df.shape[0]} raw entries")
+                    st.session_state["scraped_df"] = scraped_df.to_dict(orient="list")
 
-    if st.button("🧹 Merge & Clean"):
-        raw, clean = merge_and_clean(uploaded_frames, scraped_df, use_ai=use_ai, model_path=ai_model)
-        st.session_state["clean_df"] = clean.to_dict(orient="list")
-        st.write(f"Raw rows: {0 if raw is None else raw.shape[0]} → Clean rows: {0 if clean is None else clean.shape[0]}")
+    if st.button("Merge & Clean All Data"):
+        scraped_df = pd.DataFrame(st.session_state.get("scraped_df", {})) if "scraped_df" in st.session_state else None
+        
+        with st.spinner("Processing and cleaning data..."):
+            raw, clean = merge_and_clean(uploaded_frames, scraped_df, use_ai=False, model_path='auto')
+            st.session_state["clean_df"] = clean.to_dict(orient="list") if clean is not None else {}
+            
         if clean is not None and not clean.empty:
-            st.dataframe(clean.head(50))
-            st.download_button("Download cleaned CSV", data=clean.to_csv(index=False).encode("utf-8"),
-                               file_name="proverbs_clean_v2.csv", mime="text/csv")
+            st.success(f"Processed: {raw.shape[0] if raw is not None else 0} raw → {clean.shape[0]} clean rows")
+            
+            # Show sample of results
+            st.dataframe(clean.head(20))
+            
+            # Save and download options
             clean.to_csv(data_path, index=False, encoding="utf-8")
-            st.success(f"Wrote {data_path}")
+            st.download_button("Download Cleaned CSV", 
+                             data=clean.to_csv(index=False).encode("utf-8"),
+                             file_name="proverbs_clean.csv", mime="text/csv")
         else:
-            st.warning("No rows after cleaning. Consider relaxing filters or adding sources.")
+            st.error("No data remained after cleaning. Check source quality or selection.")
 
 with tabs[1]:
-    st.subheader("Cluster the proverbs into candidate wisdom claims")
-    st.caption("We group similar claims based on character-level similarity. The distance threshold controls how tight clusters are: lower = stricter (more, smaller clusters); higher = looser (fewer, larger clusters).")
-    out_json = st.text_input("Output JSON", value="wisdom_clusters.json")
-    out_csv = st.text_input("Output CSV", value="clusters.csv")
-    coords_csv = st.text_input("Coords CSV (for plots)", value="clusters_coords.csv")
-    dist = st.slider("Clustering distance threshold", 0.1, 0.9, 0.35, 0.01, help="Lower = stricter clustering (more clusters), Higher = looser (fewer clusters). Recommended: 0.3–0.4")
-    if st.button("⚙️ Run Extractor"):
-        try:
-            run_extractor(data_path, out_json, out_csv, coords_csv, dist)
-            st.success(f"Extraction complete → {out_json}, {out_csv}, {coords_csv}")
-            st.session_state["clusters_json"] = out_json
-            st.session_state["clusters_csv"] = out_csv
-            st.session_state["coords_csv"] = coords_csv
-        except Exception as e:
-            st.error(f"Extraction failed: {e}")
+    # Improved Extractor
+    st.subheader("Improved Clustering Engine")
+    st.write("Enhanced preprocessing, adaptive parameters, and language family diversity scoring.")
+    
+    col1, col2 = st.columns(2)
+    with col1:
+        out_json = st.text_input("Output JSON", value="wisdom_clusters.json")
+        out_csv = st.text_input("Output CSV", value="clusters.csv")
+        coords_csv = st.text_input("Coordinates CSV", value="clusters_coords.csv")
+    
+    with col2:
+        dist_threshold = st.slider("Base distance threshold", 0.1, 0.8, 0.35, 0.05,
+                                  help="Will be automatically adjusted based on data characteristics")
+        
+        st.info("The system will automatically adjust the threshold based on your data size and similarity patterns.")
+    
+    if st.button("Run Improved Clustering"):
+        if not os.path.exists(data_path):
+            st.error(f"Data file not found: {data_path}")
+        else:
+            with st.spinner("Running enhanced clustering..."):
+                try:
+                    result_df = run_extractor_enhanced(data_path, out_json, out_csv, coords_csv, dist_threshold)
+                    
+                    st.success("Clustering complete!")
+                    st.session_state.update({
+                        "clusters_json": out_json,
+                        "clusters_csv": out_csv, 
+                        "coords_csv": coords_csv
+                    })
+                    
+                    # Show quick summary
+                    if result_df is not None and not result_df.empty:
+                        st.markdown("### Quick Summary")
+                        col1, col2, col3, col4 = st.columns(4)
+                        
+                        with col1:
+                            st.metric("Clusters", len(result_df))
+                        with col2:
+                            avg_coverage = result_df["coverage"].mean()
+                            st.metric("Avg Coverage", f"{avg_coverage:.1f}")
+                        with col3:
+                            max_diversity = result_df.get("family_diversity", pd.Series([0])).max()
+                            st.metric("Max Family Diversity", int(max_diversity))
+                        with col4:
+                            high_quality = sum(result_df["wisdom_score"] >= result_df["wisdom_score"].quantile(0.8))
+                            st.metric("High Quality Clusters", high_quality)
+                            
+                except Exception as e:
+                    st.error(f"Clustering failed: {e}")
 
 with tabs[2]:
-    st.subheader("Explore results")
-    st.write("Top claims show their coverage (distinct peoples), support (total examples), and a composite score. The 2D map helps spot broad clusters.")
-    cj = st.text_input("Clusters JSON", value=st.session_state.get("clusters_json","wisdom_clusters.json"))
-    ccsv = st.text_input("Clusters CSV", value=st.session_state.get("clusters_csv","clusters.csv"))
-    ccoords = st.text_input("Coords CSV", value=st.session_state.get("coords_csv","clusters_coords.csv"))
-    if st.button("📥 Load Results"):
+    # Results & Analysis with better visualizations
+    st.subheader("Results Analysis")
+    
+    # Replace lines 169-171 in app.py with:
+    cj = st.text_input("Clusters JSON", value=st.session_state.get("clusters_json", "wisdom_clusters.json"), key="results_cj")
+    ccsv = st.text_input("Clusters CSV", value=st.session_state.get("clusters_csv", "clusters.csv"), key="results_ccsv")
+    ccoords = st.text_input("Coordinates CSV", value=st.session_state.get("coords_csv", "clusters_coords.csv"), key="results_ccoords")
+    
+    if st.button("Load & Analyze Results"):
         try:
+            # Load data
             data = json.load(open(cj, "r", encoding="utf-8"))
             df = pd.read_csv(ccsv)
-            st.write(f"Clusters: {len(df)}")
-            st.dataframe(df[["claim","wisdom_score","coverage","support","cultures"]].head(200))
-            st.markdown("**Click a row index to inspect a cluster**")
-            sel = st.number_input("Inspect cluster row", min_value=0, max_value=max(0,len(df)-1), value=0, step=1)
-            row = df.iloc[int(sel)]
-            import re, json as _json
-            st.markdown("### Cluster card")
-            st.write(f"**Claim:** {row.claim}")
-            st.write(f"Coverage: {row.coverage} peoples · Support: {row.support} · Wisdom score: {row.wisdom_score}")
+            
+            # Enhanced display
+            st.markdown("### Top Clusters by Quality")
+            display_cols = ["claim", "wisdom_score", "coverage", "support"]
+            if "family_diversity" in df.columns:
+                display_cols.append("family_diversity")
+            
+            top_clusters = df.head(15)[display_cols]
+            st.dataframe(top_clusters)
+            
+            # Cluster inspection
+            st.markdown("### Cluster Inspector")
+            cluster_idx = st.selectbox("Select cluster to examine:", range(len(df)), format_func=lambda x: f"Cluster {x+1}: {df.iloc[x]['claim'][:50]}...")
+            
+            if cluster_idx is not None:
+                cluster = df.iloc[cluster_idx]
+                
+                col1, col2 = st.columns([2, 1])
+                with col1:
+                    st.markdown(f"**Claim:** {cluster['claim']}")
+                    st.write(f"**Quality Score:** {cluster['wisdom_score']}")
+                    
+                    # Show examples
+                    cluster_data = data[cluster_idx]
+                    examples = cluster_data.get("examples", {})
+                    if examples:
+                        st.markdown("**Examples by Culture:**")
+                        for culture, example in list(examples.items())[:6]:
+                            st.write(f"• **{culture}:** {example}")
+                
+                with col2:
+                    st.metric("Coverage", f"{cluster['coverage']} peoples")
+                    st.metric("Support", f"{cluster['support']} instances")
+                    if "family_diversity" in cluster:
+                        st.metric("Family Diversity", int(cluster["family_diversity"]))
+                    
+                    # Language families if available
+                    if "language_families" in cluster_data:
+                        families = cluster_data["language_families"]
+                        st.write("**Language Families:**")
+                        for family in families:
+                            st.write(f"• {family}")
+            
+            # Visualization
+            st.markdown("### Cluster Visualization")
             try:
-                cultures = row.cultures if isinstance(row.cultures,list) else _json.loads(row.cultures)
-            except Exception:
-                cultures = []
-            st.write("Cultures:", ", ".join(cultures) if cultures else "-")
-            words = [w.lower() for w in re.findall(r"[\\w\\-]{3,}", str(row.claim))]
-            from collections import Counter
-            st.write("Top terms:", ", ".join(w for w,_ in Counter(words).most_common(5)))
-            st.info("Meaning: This cluster groups near-duplicate advice across languages. The representative claim above is the most frequent canonical form; examples per culture are available in the JSON.")
-            st.download_button("Download clusters.json", data=json.dumps(data, ensure_ascii=False, indent=2), file_name="wisdom_clusters.json", mime="application/json")
-            st.download_button("Download clusters.csv", data=df.to_csv(index=False).encode("utf-8"), file_name="clusters.csv", mime="text/csv")
-            st.markdown("### 2D Map of claims (auto-embedding)")
-            st.caption("We project claims from high-dimensional text space into 2D (TF–IDF → SVD → UMAP, fallback PCA). 'Dim 1' and 'Dim 2' summarise textual variation; bigger points = broader coverage.")
-            try:
+                coords_df = pd.read_csv(ccoords)
+                
                 import matplotlib.pyplot as plt
-                pts = pd.read_csv(ccoords)
-                fig = plt.figure(figsize=(7,5))
-                plt.scatter(pts["x"], pts["y"], s=10*(1+pts["coverage"]), alpha=0.7)
-                plt.xlabel("Dim 1"); plt.ylabel("Dim 2"); plt.title("Claim map (size ∝ coverage)")
+                fig, ax = plt.subplots(1, 1, figsize=(10, 7))
+                
+                # Color by family diversity if available
+                if "family_diversity" in coords_df.columns:
+                    scatter = ax.scatter(coords_df["x"], coords_df["y"], 
+                                       s=coords_df["coverage"] * 20, 
+                                       c=coords_df["family_diversity"],
+                                       alpha=0.7, cmap="viridis")
+                    plt.colorbar(scatter, label="Language Family Diversity")
+                else:
+                    ax.scatter(coords_df["x"], coords_df["y"],
+                             s=coords_df["coverage"] * 20,
+                             alpha=0.7, color='blue')
+                
+                ax.set_xlabel("Dimension 1")
+                ax.set_ylabel("Dimension 2") 
+                ax.set_title("Cluster Semantic Map (size = coverage)")
+                
                 st.pyplot(fig)
+                
             except Exception as e:
-                st.warning(f"Could not plot: {e}")
+                st.warning(f"Could not generate visualization: {e}")
+                
         except Exception as e:
-            st.error(f"Load failed: {e}")
+            st.error(f"Could not load results: {e}")
 
 with tabs[3]:
-    st.subheader("Interpretation (no APIs)")
-    st.write("Deterministic mode builds a human-readable report with context factors (coastal/island, maritime, trade, migration, subsistence, staple, legal, urban, values). Optional LLM mode uses a small local model for a more fluent narrative—still offline.")
-    cj = st.text_input("Clusters JSON", value=st.session_state.get("clusters_json","wisdom_clusters.json"), key="int_cjson")
-    meta = st.text_input("People metadata CSV", value="people_metadata_v2.csv", key="int_meta")
-    out = st.text_input("Output report (deterministic)", value="interpretation_report_v2.txt")
-    if st.button("🧠 Generate deterministic interpretation"):
-        try:
-            path = run_interpret_det(cj, meta, out)
-            txt = open(path, "r", encoding="utf-8").read()
-            st.success(f"Wrote {path}")
-            st.text_area("Report", value=txt, height=420)
-            st.download_button("Download interpretation", data=txt.encode("utf-8"), file_name=os.path.basename(out), mime="text/plain")
-        except Exception as e:
-            st.error(f"Interpretation failed: {e}")
-    st.markdown("---")
-    st.markdown("**Optional local LLM (llama.cpp, no APIs)**")
-    st.caption("Leave the model path as 'auto' to use ./models (attempt small download once). Or upload your own .gguf below.")
-    model = st.text_input("Local model path (.gguf) — 'auto' uses ./models or downloads TinyLlama", value="auto")
-    out_llm = st.text_input("Output report (LLM)", value="interpretation_llm.txt")
-    st.markdown("**Model options**: Use 'auto' (search ./models and attempt a small download) or upload a .gguf below.")
-    up_model = st.file_uploader("Upload local .gguf to ./models", type=["gguf"], accept_multiple_files=False)
-    if up_model is not None:
-        os.makedirs("models", exist_ok=True)
-        dest = os.path.join("models", up_model.name)
-        with open(dest, "wb") as f:
-            f.write(up_model.getbuffer())
-        st.success(f"Saved model to {dest}")
-    if st.button("Check / fetch default model"):
-        ok = ensure_default_model()
-        if ok:
-            st.success("Default model ready in ./models")
-        else:
-            st.warning("Could not locate/download a default model. You can still use deterministic mode or upload a .gguf.")
-    if st.button("🧩 Generate LLM-based interpretation"):
-        try:
-            det_out = "__det_tmp.txt"
-            path_det = run_interpret_det(cj, meta, det_out)
-            txt = open(path_det, "r", encoding="utf-8").read()
-            summary = build_summary_from_text(txt)
-            path = run_interpret_llm(model, summary, out_llm)
-            content = open(path,"r",encoding="utf-8").read()
-            st.success(f"Wrote {path}")
-            st.text_area("LLM Report", value=content, height=420)
-            st.download_button("Download LLM interpretation", data=content.encode("utf-8"), file_name=os.path.basename(out_llm), mime="text/plain")
-        except Exception as e:
-            st.error(f"LLM interpretation failed: {e}")
+    # Quick Validation
+    add_simple_validation_tab()
 
 with tabs[4]:
-    st.subheader("Diagnostics: how much to trust the map")
-    st.write("We report clustering quality (silhouette), compactness (mean intra-cluster cosine distance), stability under 10% subsampling, and correlations between theme frequencies and context proxies (Spearman).")
-    ccsv = st.text_input("Clusters CSV", value=st.session_state.get("clusters_csv","clusters.csv"), key="diag_ccsv")
-    ccoords = st.text_input("Coords CSV", value=st.session_state.get("coords_csv","clusters_coords.csv"), key="diag_ccoords")
-    meta = st.text_input("People metadata CSV", value="people_metadata_v2.csv", key="diag_meta")
-    if st.button("🔎 Compute diagnostics"):
+    # Interpretation - unchanged
+    st.subheader("Interpretation")
+    
+    cj = st.text_input("Clusters JSON", value=st.session_state.get("clusters_json","wisdom_clusters.json"), key="int_json")
+    meta = st.text_input("Metadata CSV", value=meta_path, key="int_meta")
+    out_report = st.text_input("Output report", value="interpretation_report.txt")
+    
+    if st.button("Generate Report"):
         try:
-            import pandas as pd, os
-            from diagnostics import compute_diagnostics
-            dfc = pd.read_csv(ccsv)
-            import ast
-            def fix(x):
-                try:
-                    return ast.literal_eval(x) if isinstance(x,str) and x.startswith('[') else x
-                except Exception:
-                    return x
-            if "cultures" in dfc.columns:
-                dfc["cultures"] = dfc["cultures"].apply(fix)
-            dfcoords = pd.read_csv(ccoords) if os.path.exists(ccoords) else pd.DataFrame()
-            meta_df = pd.read_csv(meta)
-            trust, corrs = compute_diagnostics(dfc, dfcoords, meta_df)
-            st.json(trust)
-            if corrs:
-                st.write("**Theme × Proxy Spearman correlations (rho, p)**")
-                st.json(corrs)
-            st.caption("Interpretation: Silhouette ~0.2–0.5 is reasonable for short, noisy strings; lower suggests mixed clusters. Lower compactness is better. Stability is the fraction of top-K claims retained after dropping 10% of entries (closer to 1 is better).")
+            report_path = run_interpret_det(cj, meta, out_report)
+            report_text = open(report_path, "r", encoding="utf-8").read()
+            
+            st.success(f"Report generated: {report_path}")
+            st.text_area("Generated Report", value=report_text, height=400)
+            
+            st.download_button("Download Report", 
+                             data=report_text.encode("utf-8"),
+                             file_name=os.path.basename(out_report), 
+                             mime="text/plain")
+        except Exception as e:
+            st.error(f"Report generation failed: {e}")
+
+with tabs[5]:
+    # Practical Diagnostics
+    st.subheader("Practical Diagnostics & Recommendations")
+    st.write("Actionable analysis of clustering quality with specific recommendations.")
+    
+    ccsv_diag = st.text_input("Clusters CSV", value=st.session_state.get("clusters_csv","clusters.csv"), key="diag_csv")
+    ccoords_diag = st.text_input("Coordinates CSV", value=st.session_state.get("coords_csv","clusters_coords.csv"), key="diag_coords")
+    meta_diag = st.text_input("Metadata CSV", value=meta_path, key="diag_meta")
+    
+    if st.button("Run Practical Diagnostics"):
+        try:
+            # Load data with error handling
+            dfc = pd.read_csv(ccsv_diag) if os.path.exists(ccsv_diag) else pd.DataFrame()
+            dfcoords = pd.read_csv(ccoords_diag) if os.path.exists(ccoords_diag) else pd.DataFrame()
+            meta_df = pd.read_csv(meta_diag) if os.path.exists(meta_diag) else pd.DataFrame()
+            
+            # Fix cultures column if needed
+            if not dfc.empty and "cultures" in dfc.columns:
+                def parse_cultures(x):
+                    if isinstance(x, str) and x.startswith('['):
+                        try:
+                            import ast
+                            return ast.literal_eval(x)
+                        except:
+                            return []
+                    return x if isinstance(x, list) else []
+                
+                dfc["cultures"] = dfc["cultures"].apply(parse_cultures)
+            
+            # Run diagnostics
+            diagnostics, correlations = compute_practical_diagnostics(dfc, dfcoords, meta_df)
+            
+            # Display results
+            col1, col2 = st.columns([2, 1])
+            
+            with col1:
+                st.markdown("### Overall Assessment")
+                
+                trust_score = diagnostics.get("trust_score", 0)
+                trust_level = diagnostics.get("interpretation", {}).get("trust_level", "Unknown")
+                
+                # Color-coded trust score
+                if trust_score >= 7:
+                    st.success(f"Trust Score: {trust_score}/10 ({trust_level})")
+                elif trust_score >= 4:
+                    st.warning(f"Trust Score: {trust_score}/10 ({trust_level})")
+                else:
+                    st.error(f"Trust Score: {trust_score}/10 ({trust_level})")
+                
+                # Main issues
+                main_issues = diagnostics.get("interpretation", {}).get("main_issues", [])
+                if main_issues:
+                    st.markdown("**Priority Issues:**")
+                    for issue in main_issues:
+                        st.write(f"• {issue}")
+            
+            with col2:
+                st.markdown("### Key Metrics")
+                
+                metrics = {
+                    "Silhouette": diagnostics.get("silhouette", "N/A"),
+                    "Compactness": diagnostics.get("compactness", "N/A"),
+                    "Stability": diagnostics.get("stability", "N/A")
+                }
+                
+                for metric, value in metrics.items():
+                    if isinstance(value, float) and not pd.isna(value):
+                        st.metric(metric, f"{value:.3f}")
+                    else:
+                        st.metric(metric, "N/A")
+            
+            # Detailed recommendations
+            recommendations = diagnostics.get("recommendations", [])
+            if recommendations:
+                st.markdown("### Actionable Recommendations")
+                
+                for rec in recommendations:
+                    priority = rec.get("priority", "Medium")
+                    if priority == "High":
+                        st.error(f"**{rec['issue']}**")
+                    elif priority == "Medium":
+                        st.warning(f"**{rec['issue']}**")
+                    else:
+                        st.info(f"**{rec['issue']}**")
+                    
+                    st.write(f"Cause: {rec.get('cause', 'Unknown')}")
+                    st.write(f"Action: {rec.get('action', 'No specific action suggested')}")
+                    st.markdown("---")
+            
+            # Cluster characteristics
+            cluster_chars = diagnostics.get("cluster_characteristics", {})
+            if cluster_chars:
+                st.markdown("### Data Summary")
+                col1, col2, col3, col4 = st.columns(4)
+                
+                with col1:
+                    st.metric("Total Clusters", cluster_chars.get("total_clusters", 0))
+                with col2:
+                    st.metric("Total Items", cluster_chars.get("total_items", 0))
+                with col3:
+                    st.metric("Singleton Clusters", cluster_chars.get("singleton_clusters", 0))
+                with col4:
+                    st.metric("Largest Cluster", cluster_chars.get("largest_cluster_size", 0))
+            
         except Exception as e:
             st.error(f"Diagnostics failed: {e}")
+            st.write("Please check that your data files exist and are properly formatted.")
