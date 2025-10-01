@@ -4,3 +4,4 @@ scikit-learn
 streamlit
 beautifulsoup4
 requests
+lxml

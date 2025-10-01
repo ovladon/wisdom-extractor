@@ -1,4 +1,4 @@
-import os, re, random, time, json, io
+import os, random, json
 import streamlit as st
 import pandas as pd
 
@@ -37,15 +37,13 @@ CATALOG = {
 }
 
 def seed_if_empty():
-    # Seed the DB with the embedded CATALOG when it's empty.
     from core.persistence import list_sources, upsert_source
-    srcs = list_sources()
-    if not srcs:
+    if not list_sources():
         for s in CATALOG.get("sources", []):
             upsert_source(s.get("name", s.get("url","(no name)")), s["url"], ",".join(s.get("tags",[])))
 
-st.set_page_config(page_title='Wisdom Lab — Full Plus (Seeded)', layout='wide')
-st.title('Wisdom Lab — Collect • Cluster • Annotate • Persist (Seeded)')
+st.set_page_config(page_title='Wisdom Lab — Full Plus (Seeded v16)', layout='wide')
+st.title('Wisdom Lab — Collect • Cluster • Annotate • Persist (v16)')
 
 init_db()
 seed_if_empty()
@@ -55,19 +53,15 @@ st.caption(f"DB: {os.path.abspath(DB_PATH)} • CWD: {os.getcwd()}")
 
 seed_col1, seed_col2 = st.columns(2)
 if seed_col1.button("Seed built-in catalog now"):
-    seed_if_empty()
-    st.success("Catalog seeded.")
+    seed_if_empty(); st.success("Catalog seeded.")
 if seed_col2.button("Reset DB sources and re-seed"):
     import sqlite3
     con = sqlite3.connect(DB_PATH, check_same_thread=False); cur = con.cursor()
     try:
-        cur.execute("DELETE FROM sources")
-        con.commit()
-        st.info("Cleared sources.")
+        cur.execute("DELETE FROM sources"); con.commit(); st.info("Cleared sources.")
     finally:
         con.close()
-    seed_if_empty()
-    st.success("Re-seeded catalog.")
+    seed_if_empty(); st.success("Re-seeded catalog.")
 
 st.sidebar.subheader('Who are you?')
 user = st.sidebar.text_input('Your name (for leaderboard)', value='(anon)')
@@ -90,7 +84,6 @@ with tabs[0]:
         ids = [s['id'] for s in filtered]
         labels = [f"{s['name']} ({s['url']})" for s in filtered]
         pick = st.multiselect('Pick sources (empty = all)', options=ids, format_func=lambda i: labels[ids.index(i)] if i in ids else str(i))
-
         crawl_btn = st.button('🚀 Crawl now (depth‑1, uncapped)')
 
     with colB:

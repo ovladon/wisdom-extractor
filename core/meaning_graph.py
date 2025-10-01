@@ -28,8 +28,7 @@ def communities_from_edges(edges):
         parent.setdefault(x, x)
         if parent[x] != x:
             parent[x] = find(parent[x])
-            return parent[x]
-        return x
+        return parent[x]
     def union(a, b):
         ra, rb = find(a), find(b)
         if ra != rb:

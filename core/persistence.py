@@ -38,7 +38,8 @@ def upsert_source(name, url, tags=""):
                 (name, url, tags, time.time()))
     con.commit()
     cur.execute("SELECT id FROM sources WHERE url=?", (url,))
-    sid = cur.fetchone()[0]
+    row = cur.fetchone()
+    sid = row[0] if row else None
     con.close()
     return sid
 
@@ -89,7 +90,6 @@ def add_constraint(a_id, b_id, label, user):
 
 def stats():
     con = connect(); cur = con.cursor()
-    con.execute = cur.execute  # back-compat typo guard
     cur.execute("SELECT COUNT(*) FROM proverbs WHERE excluded=0"); n_prov = cur.fetchone()[0]
     cur.execute("SELECT COUNT(*) FROM constraints WHERE label='must'"); n_must = cur.fetchone()[0]
     cur.execute("SELECT COUNT(*) FROM constraints WHERE label='cannot'"); n_cannot = cur.fetchone()[0]
