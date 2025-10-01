@@ -1,385 +1,270 @@
+import os, re, random, time, json, io
 import streamlit as st
-import pandas as pd, json, os
-from dataset_builder import build_from_sources, merge_and_clean
-from extractor import run_enhanced as run_extractor_enhanced  # Updated import
-from interpret_v2 import summarize as run_interpret_det
-from interpret_llm import run_llm as run_interpret_llm, build_summary_from_text, ensure_default_model
-from diagnostics import compute_practical_diagnostics, compute_trust_score  # Updated import
-from simple_validation import add_simple_validation_tab  # New import
+import pandas as pd
 
-st.set_page_config(page_title="Wisdom Extractor v8 - Improved", layout="wide")
-st.title("Wisdom Extractor v8 - Improved")
-st.caption("Realistic improvements: better preprocessing, adaptive clustering, simple validation, actionable diagnostics")
+from core.proposition_extractor import extract_proposition
+from core.meaning_graph import build_edges, communities_from_edges, nearest_pairs
+from core.survival_score import survival_score
+from core.persistence import (
+    init_db, upsert_source, list_sources, insert_proverb, list_proverbs,
+    mark_excluded, save_proposition, add_constraint, stats, leaderboard, export_annotations
+)
+from scraper.basic_scraper import fetch, discover_links, extract_items, crawl_source
 
-with st.sidebar:
-    st.header("Settings")
-    data_path = st.text_input("Dataset CSV path", value="proverbs_clean_v2.csv")
-    meta_path = st.text_input("People metadata CSV", value="people_metadata_v2.csv")
-    sources_path = st.text_input("Sources YAML", value="sources.yaml")
-    
-    st.markdown("---")
-    st.markdown("**Key Improvements:**")
-    st.write("• Better text normalization and canonicalization")
-    st.write("• Adaptive distance threshold selection")
-    st.write("• Language family diversity scoring")
-    st.write("• Simple validation interface")
-    st.write("• Actionable diagnostic recommendations")
+CATALOG = {
+  "sources": [
+    {"name":"Wikiquote — English Proverbs","url":"https://en.wikiquote.org/wiki/English_proverbs","tags":["wikiquote","english","list"]},
+    {"name":"Wikiquote — Romanian Proverbs","url":"https://ro.wikiquote.org/wiki/Proverbe_rom%C3%A2ne%C5%9fti","tags":["wikiquote","romanian","list"]},
+    {"name":"Wikiquote — Russian Proverbs","url":"https://ru.wikiquote.org/wiki/%D0%9F%D0%BE%D1%81%D0%BB%D0%BE%D0%B2%D0%B8%D1%86%D1%8B","tags":["wikiquote","russian","list"]},
+    {"name":"Wikiquote — French Proverbs","url":"https://fr.wikiquote.org/wiki/Proverbes_fran%C3%A7ais","tags":["wikiquote","french","list"]},
+    {"name":"Wikiquote — Spanish Proverbs","url":"https://es.wikiquote.org/wiki/Refranes","tags":["wikiquote","spanish","list"]},
+    {"name":"Wikiquote — German Proverbs","url":"https://de.wikiquote.org/wiki/Sprichwort","tags":["wikiquote","german","list"]},
+    {"name":"Wikiquote — Italian Proverbs","url":"https://it.wikiquote.org/wiki/Proverbi_italiani","tags":["wikiquote","italian","list"]},
+    {"name":"Wikiquote — Portuguese Proverbs","url":"https://pt.wikiquote.org/wiki/Prov%C3%A9rbios_portugueses","tags":["wikiquote","portuguese","list"]},
+    {"name":"Wikiquote — Dutch Proverbs","url":"https://nl.wikiquote.org/wiki/Spreekwoord","tags":["wikiquote","dutch","list"]},
+    {"name":"Wikiquote — Finnish Proverbs","url":"https://fi.wikiquote.org/wiki/Sanonnat","tags":["wikiquote","finnish","list"]},
+    {"name":"Wikiquote — Polish Proverbs","url":"https://pl.wikiquote.org/wiki/Przys%C5%82owia_polskie","tags":["wikiquote","polish","list"]},
+    {"name":"Wikiquote — Czech Proverbs","url":"https://cs.wikiquote.org/wiki/P%C5%99%C3%ADslov%C3%AD","tags":["wikiquote","czech","list"]},
+    {"name":"Wikiquote — Greek Proverbs","url":"https://el.wikiquote.org/wiki/%CE%A0%CE%B1%CF%81%CE%BF%CE%B9%CE%BC%CE%AF%CE%B5%CF%82","tags":["wikiquote","greek","list"]},
+    {"name":"Wikiquote — Turkish Proverbs","url":"https://tr.wikiquote.org/wiki/Atas%C3%B6zleri","tags":["wikiquote","turkish","list"]},
+    {"name":"Wikiquote — Arabic Proverbs","url":"https://ar.wikiquote.org/wiki/%D8%A3%D9%85%D8%AB%D8%A7%D9%84_%D8%B9%D8%B1%D8%A8%D9%8A%D8%A9","tags":["wikiquote","arabic","list"]},
+    {"name":"Wikiquote — Persian Proverbs","url":"https://fa.wikiquote.org/wiki/%D8%B6%D8%B1%D8%A7%D8%A6%D8%A8_%D8%A7%D9%84%D8%A3%D9%85%D8%AB%D8%A7%D9%84","tags":["wikiquote","persian","list"]},
+    {"name":"Wikiquote — Hindi Proverbs","url":"https://hi.wikiquote.org/wiki/%E0%A4%B2%E0%A5%8B%E0%A4%95%E0%A5%8B%E0%A4%95%E0%A5%8D%E0%A4%A4%E0%A4%BF%E0%A4%AF%E0%A4%BE%E0%A4%81","tags":["wikiquote","hindi","list"]},
+    {"name":"Wikiquote — Chinese Proverbs","url":"https://zh.wikiquote.org/wiki/%E8%A8%80%E8%91%89","tags":["wikiquote","chinese","list"]},
+    {"name":"Wikiquote — Japanese Proverbs","url":"https://ja.wikiquote.org/wiki/%E8%91%89%E5%8F%A5","tags":["wikiquote","japanese","list"]},
+    {"name":"Wikiquote — Korean Proverbs","url":"https://ko.wikiquote.org/wiki/%EC%86%8C%EA%B0%9C:%EC%86%8C%EC%8A%A4%EB%9F%AC","tags":["wikiquote","korean","list"]}
+  ]
+}
 
-tabs = st.tabs(["1) Dataset Builder", "2) Improved Extractor", "3) Results & Analysis", 
-                "4) Quick Validation", "5) Interpretation", "6) Practical Diagnostics"])
+def seed_if_empty():
+    # Seed the DB with the embedded CATALOG when it's empty.
+    from core.persistence import list_sources, upsert_source
+    srcs = list_sources()
+    if not srcs:
+        for s in CATALOG.get("sources", []):
+            upsert_source(s.get("name", s.get("url","(no name)")), s["url"], ",".join(s.get("tags",[])))
+
+st.set_page_config(page_title='Wisdom Lab — Full Plus (Seeded)', layout='wide')
+st.title('Wisdom Lab — Collect • Cluster • Annotate • Persist (Seeded)')
+
+init_db()
+seed_if_empty()
+
+DB_PATH = os.environ.get("WISDOM_DB_PATH", "wisdom.db")
+st.caption(f"DB: {os.path.abspath(DB_PATH)} • CWD: {os.getcwd()}")
+
+seed_col1, seed_col2 = st.columns(2)
+if seed_col1.button("Seed built-in catalog now"):
+    seed_if_empty()
+    st.success("Catalog seeded.")
+if seed_col2.button("Reset DB sources and re-seed"):
+    import sqlite3
+    con = sqlite3.connect(DB_PATH, check_same_thread=False); cur = con.cursor()
+    try:
+        cur.execute("DELETE FROM sources")
+        con.commit()
+        st.info("Cleared sources.")
+    finally:
+        con.close()
+    seed_if_empty()
+    st.success("Re-seeded catalog.")
+
+st.sidebar.subheader('Who are you?')
+user = st.sidebar.text_input('Your name (for leaderboard)', value='(anon)')
+
+tabs = st.tabs(['Sources & Scrape','Import CSV','Propositions','Graph','Communities','Annotate • Play','Candidates','Leaderboard & Export'])
 
 with tabs[0]:
-    # Dataset Builder - unchanged but with better progress feedback
-    st.subheader("Build or extend a dataset")
-    
-    c1, c2 = st.columns(2)
-    with c1:
-        st.markdown("**Upload existing CSVs**")
-        up = st.file_uploader("Upload one or more CSVs", type=["csv"], accept_multiple_files=True)
-        uploaded_frames = []
-        if up:
-            for f in up:
-                try:
-                    df = pd.read_csv(f)
-                    uploaded_frames.append(df)
-                    st.success(f"Loaded: {f.name} - {df.shape[0]} rows")
-                except Exception as e:
-                    st.error(f"Could not read {f.name}: {e}")
-    
-    with c2:
-        st.markdown("**Fetch from public sources**")
-        try:
-            import yaml
-            srcs = yaml.safe_load(open(sources_path, "r", encoding="utf-8"))
-            people_list = sorted(set([s.get("people","") for s in srcs]))
-            type_list = sorted(set([s.get("type","wikiquote") for s in srcs]))
-        except Exception as e:
-            st.warning(f"Could not read {sources_path}: {e}")
-            people_list, type_list = [], []
-        
-        # Better selection interface
-        col_a, col_b = st.columns(2)
-        with col_a:
-            select_all = st.checkbox("Select all peoples", value=False)
-            n_selected = st.slider("Number to select", 1, min(20, len(people_list)), 5)
-        
-        with col_b:
-            if select_all:
-                sel_people = people_list
-            else:
-                # Smart default selection - mix of major and diverse languages
-                major_langs = ['English', 'Chinese', 'Spanish', 'Arabic', 'Hindi', 'French', 'Russian', 'Japanese']
-                defaults = [p for p in people_list if p in major_langs][:n_selected//2]
-                others = [p for p in people_list if p not in major_langs][:n_selected-len(defaults)]
-                default_selection = defaults + others
-                sel_people = st.multiselect("Selected peoples", people_list, default=default_selection)
-        
-        sel_types = st.multiselect("Source types", type_list, default=type_list[:2])
-        sleep = st.slider("Delay (seconds)", 0.5, 3.0, 1.0, 0.5)
-        
-        if st.button("Fetch Selected Sources"):
-            if not sel_people:
-                st.warning("Please select at least one people group")
-            else:
-                with st.spinner(f"Fetching from {len(sel_people)} sources..."):
-                    scraped_df = build_from_sources(sources_path, selected_people=sel_people, 
-                                                  selected_types=sel_types, sleep=sleep, save_dir="runs")
-                    st.success(f"Fetched {scraped_df.shape[0]} raw entries")
-                    st.session_state["scraped_df"] = scraped_df.to_dict(orient="list")
+    st.header('Sources & Scrape')
+    srcs = list_sources()
+    st.caption(f"Sources in DB: {len(srcs)}")
+    st.dataframe(pd.DataFrame(srcs))
 
-    if st.button("Merge & Clean All Data"):
-        scraped_df = pd.DataFrame(st.session_state.get("scraped_df", {})) if "scraped_df" in st.session_state else None
-        
-        with st.spinner("Processing and cleaning data..."):
-            raw, clean = merge_and_clean(uploaded_frames, scraped_df, use_ai=False, model_path='auto')
-            st.session_state["clean_df"] = clean.to_dict(orient="list") if clean is not None else {}
-            
-        if clean is not None and not clean.empty:
-            st.success(f"Processed: {raw.shape[0] if raw is not None else 0} raw → {clean.shape[0]} clean rows")
-            
-            # Show sample of results
-            st.dataframe(clean.head(20))
-            
-            # Save and download options
-            clean.to_csv(data_path, index=False, encoding="utf-8")
-            st.download_button("Download Cleaned CSV", 
-                             data=clean.to_csv(index=False).encode("utf-8"),
-                             file_name="proverbs_clean.csv", mime="text/csv")
+    colA, colB = st.columns([2,1])
+    with colA:
+        st.subheader('Scrape settings')
+        respect_robots = st.checkbox('Respect robots.txt (recommended)', value=True)
+        workers = st.slider('Concurrent fetch workers', 1, 16, 8, 1)
+        tag_filter = st.text_input('Filter sources by tags substring (optional)', '')
+        filtered = [s for s in srcs if (tag_filter.strip().lower() in (s['tags'] or '').lower())] if tag_filter else srcs
+        ids = [s['id'] for s in filtered]
+        labels = [f"{s['name']} ({s['url']})" for s in filtered]
+        pick = st.multiselect('Pick sources (empty = all)', options=ids, format_func=lambda i: labels[ids.index(i)] if i in ids else str(i))
+
+        crawl_btn = st.button('🚀 Crawl now (depth‑1, uncapped)')
+
+    with colB:
+        st.subheader('Import/Export catalog (JSON)')
+        up = st.file_uploader('Import catalog JSON', type=['json'], key='cat_up')
+        if up is not None:
+            try:
+                data = json.load(up)
+                for s in data.get('sources', []):
+                    upsert_source(s.get('name', s.get('url','(no name)')), s['url'], ','.join(s.get('tags',[])))
+                st.success('Catalog imported.')
+            except Exception as e:
+                st.error(f'Failed: {e}')
+        if st.button('Export catalog JSON'):
+            srcs = list_sources()
+            out = {'sources':[{'name':s['name'],'url':s['url'],'tags':s['tags'].split(',') if s['tags'] else []} for s in srcs]}
+            st.download_button('Download sources_catalog.json', data=json.dumps(out, ensure_ascii=False, indent=2), file_name='sources_catalog.json', mime='application/json')
+
+    if crawl_btn:
+        target_srcs = filtered if not pick else [s for s in filtered if s['id'] in pick]
+        if not target_srcs:
+            st.warning('No sources selected (and none after filter).')
         else:
-            st.error("No data remained after cleaning. Check source quality or selection.")
+            total_new = 0
+            progress = st.progress(0.0)
+            for idx, s in enumerate(target_srcs):
+                st.write(f"**Crawling:** {s['name']} — {s['url']}")
+                try:
+                    pages, items = crawl_source(s['url'], respect_robots=respect_robots, workers=workers)
+                    st.caption(f"Discovered {len(pages)} pages; extracted {len(items)} items")
+                    for it in items:
+                        pid = insert_proverb(s['id'], it['text'], it['url'])
+                        if pid: total_new += 1
+                except Exception as e:
+                    st.warning(f"Failed source {s['url']}: {e}")
+                progress.progress((idx+1)/max(1,len(target_srcs)))
+            st.success(f"Done. New proverbs saved: {total_new}")
 
 with tabs[1]:
-    # Improved Extractor
-    st.subheader("Improved Clustering Engine")
-    st.write("Enhanced preprocessing, adaptive parameters, and language family diversity scoring.")
-    
-    col1, col2 = st.columns(2)
-    with col1:
-        out_json = st.text_input("Output JSON", value="wisdom_clusters.json")
-        out_csv = st.text_input("Output CSV", value="clusters.csv")
-        coords_csv = st.text_input("Coordinates CSV", value="clusters_coords.csv")
-    
-    with col2:
-        dist_threshold = st.slider("Base distance threshold", 0.1, 0.8, 0.35, 0.05,
-                                  help="Will be automatically adjusted based on data characteristics")
-        
-        st.info("The system will automatically adjust the threshold based on your data size and similarity patterns.")
-    
-    if st.button("Run Improved Clustering"):
-        if not os.path.exists(data_path):
-            st.error(f"Data file not found: {data_path}")
-        else:
-            with st.spinner("Running enhanced clustering..."):
-                try:
-                    result_df = run_extractor_enhanced(data_path, out_json, out_csv, coords_csv, dist_threshold)
-                    
-                    st.success("Clustering complete!")
-                    st.session_state.update({
-                        "clusters_json": out_json,
-                        "clusters_csv": out_csv, 
-                        "coords_csv": coords_csv
-                    })
-                    
-                    # Show quick summary
-                    if result_df is not None and not result_df.empty:
-                        st.markdown("### Quick Summary")
-                        col1, col2, col3, col4 = st.columns(4)
-                        
-                        with col1:
-                            st.metric("Clusters", len(result_df))
-                        with col2:
-                            avg_coverage = result_df["coverage"].mean()
-                            st.metric("Avg Coverage", f"{avg_coverage:.1f}")
-                        with col3:
-                            max_diversity = result_df.get("family_diversity", pd.Series([0])).max()
-                            st.metric("Max Family Diversity", int(max_diversity))
-                        with col4:
-                            high_quality = sum(result_df["wisdom_score"] >= result_df["wisdom_score"].quantile(0.8))
-                            st.metric("High Quality Clusters", high_quality)
-                            
-                except Exception as e:
-                    st.error(f"Clustering failed: {e}")
+    st.header('Import CSV')
+    up = st.file_uploader('CSV file', type=['csv'])
+    if up is not None:
+        df = pd.read_csv(up)
+        cols = df.columns.tolist()
+        def guess(cands):
+            for c in cols:
+                if any(k in c.lower() for k in cands): return c
+            return cols[0]
+        text_col = st.selectbox('Text', cols, index=cols.index(guess(['text','claim','proverb','saying','quote'])))
+        lang_col = st.selectbox('Language', ['<none>']+cols)
+        fam_col  = st.selectbox('Family', ['<none>']+cols)
+        reg_col  = st.selectbox('Region', ['<none>']+cols)
+        if st.button('Import into DB'):
+            sid = upsert_source('CSV Import', f'file://{up.name}', 'csv')
+            newc = 0
+            for _,r in df.iterrows():
+                text = str(r.get(text_col,''))
+                if not text.strip(): 
+                    continue
+                lang = None if lang_col=='<none>' else r.get(lang_col)
+                fam  = None if fam_col=='<none>' else r.get(fam_col)
+                reg  = None if reg_col=='<none>' else r.get(reg_col)
+                if insert_proverb(sid, text, url=f'file://{up.name}', language=lang, family=fam, region=reg):
+                    newc += 1
+            st.success(f'Imported {newc} rows.')
 
 with tabs[2]:
-    # Results & Analysis with better visualizations
-    st.subheader("Results Analysis")
-    
-    # Replace lines 169-171 in app.py with:
-    cj = st.text_input("Clusters JSON", value=st.session_state.get("clusters_json", "wisdom_clusters.json"), key="results_cj")
-    ccsv = st.text_input("Clusters CSV", value=st.session_state.get("clusters_csv", "clusters.csv"), key="results_ccsv")
-    ccoords = st.text_input("Coordinates CSV", value=st.session_state.get("coords_csv", "clusters_coords.csv"), key="results_ccoords")
-    
-    if st.button("Load & Analyze Results"):
-        try:
-            # Load data
-            data = json.load(open(cj, "r", encoding="utf-8"))
-            df = pd.read_csv(ccsv)
-            
-            # Enhanced display
-            st.markdown("### Top Clusters by Quality")
-            display_cols = ["claim", "wisdom_score", "coverage", "support"]
-            if "family_diversity" in df.columns:
-                display_cols.append("family_diversity")
-            
-            top_clusters = df.head(15)[display_cols]
-            st.dataframe(top_clusters)
-            
-            # Cluster inspection
-            st.markdown("### Cluster Inspector")
-            cluster_idx = st.selectbox("Select cluster to examine:", range(len(df)), format_func=lambda x: f"Cluster {x+1}: {df.iloc[x]['claim'][:50]}...")
-            
-            if cluster_idx is not None:
-                cluster = df.iloc[cluster_idx]
-                
-                col1, col2 = st.columns([2, 1])
-                with col1:
-                    st.markdown(f"**Claim:** {cluster['claim']}")
-                    st.write(f"**Quality Score:** {cluster['wisdom_score']}")
-                    
-                    # Show examples
-                    cluster_data = data[cluster_idx]
-                    examples = cluster_data.get("examples", {})
-                    if examples:
-                        st.markdown("**Examples by Culture:**")
-                        for culture, example in list(examples.items())[:6]:
-                            st.write(f"• **{culture}:** {example}")
-                
-                with col2:
-                    st.metric("Coverage", f"{cluster['coverage']} peoples")
-                    st.metric("Support", f"{cluster['support']} instances")
-                    if "family_diversity" in cluster:
-                        st.metric("Family Diversity", int(cluster["family_diversity"]))
-                    
-                    # Language families if available
-                    if "language_families" in cluster_data:
-                        families = cluster_data["language_families"]
-                        st.write("**Language Families:**")
-                        for family in families:
-                            st.write(f"• {family}")
-            
-            # Visualization
-            st.markdown("### Cluster Visualization")
-            try:
-                coords_df = pd.read_csv(ccoords)
-                
-                import matplotlib.pyplot as plt
-                fig, ax = plt.subplots(1, 1, figsize=(10, 7))
-                
-                # Color by family diversity if available
-                if "family_diversity" in coords_df.columns:
-                    scatter = ax.scatter(coords_df["x"], coords_df["y"], 
-                                       s=coords_df["coverage"] * 20, 
-                                       c=coords_df["family_diversity"],
-                                       alpha=0.7, cmap="viridis")
-                    plt.colorbar(scatter, label="Language Family Diversity")
-                else:
-                    ax.scatter(coords_df["x"], coords_df["y"],
-                             s=coords_df["coverage"] * 20,
-                             alpha=0.7, color='blue')
-                
-                ax.set_xlabel("Dimension 1")
-                ax.set_ylabel("Dimension 2") 
-                ax.set_title("Cluster Semantic Map (size = coverage)")
-                
-                st.pyplot(fig)
-                
-            except Exception as e:
-                st.warning(f"Could not generate visualization: {e}")
-                
-        except Exception as e:
-            st.error(f"Could not load results: {e}")
+    st.header('Propositions')
+    rows = list_proverbs(excluded=False)
+    st.caption(f'Active proverbs: {len(rows)}')
+    if st.button('Compute idea_formula & frame for all (light rules)') and rows:
+        for r in rows:
+            p = extract_proposition(r['text'])
+            save_proposition(r['id'], p['idea_formula'], p['frame'])
+        st.success('Updated proposition fields.')
+    df = pd.DataFrame(list_proverbs(excluded=False))
+    if not df.empty:
+        st.dataframe(df.head(50))
 
 with tabs[3]:
-    # Quick Validation
-    add_simple_validation_tab()
+    st.header('Graph (TF‑IDF paraphrase fallback)')
+    df = pd.DataFrame(list_proverbs(excluded=False))
+    if df.empty:
+        st.info('No data. Scrape or import first.')
+    else:
+        thr = st.slider('Paraphrase threshold', 0.30, 0.90, 0.42, 0.01)
+        if st.button('Build graph now'):
+            work = df.rename(columns={'id':'id','text':'text'})
+            edges = build_edges(work, 'text', thr)
+            st.session_state['edges'] = edges
+            st.write(edges.head(20))
+            st.success(f'Edges: {len(edges)}')
 
 with tabs[4]:
-    # Interpretation - unchanged
-    st.subheader("Interpretation")
-    
-    cj = st.text_input("Clusters JSON", value=st.session_state.get("clusters_json","wisdom_clusters.json"), key="int_json")
-    meta = st.text_input("Metadata CSV", value=meta_path, key="int_meta")
-    out_report = st.text_input("Output report", value="interpretation_report.txt")
-    
-    if st.button("Generate Report"):
-        try:
-            report_path = run_interpret_det(cj, meta, out_report)
-            report_text = open(report_path, "r", encoding="utf-8").read()
-            
-            st.success(f"Report generated: {report_path}")
-            st.text_area("Generated Report", value=report_text, height=400)
-            
-            st.download_button("Download Report", 
-                             data=report_text.encode("utf-8"),
-                             file_name=os.path.basename(out_report), 
-                             mime="text/plain")
-        except Exception as e:
-            st.error(f"Report generation failed: {e}")
+    st.header('Communities')
+    edges = st.session_state.get('edges')
+    if edges is None or edges.empty:
+        st.info('Build the graph first.')
+    else:
+        comp = communities_from_edges(edges)
+        df = pd.DataFrame(list_proverbs(excluded=False))
+        df['community_id'] = df['id'].map(comp).fillna(-1).astype(int)
+        st.session_state['communities'] = df[['id','community_id']]
+        st.dataframe(df[['id','text','community_id']].head(50))
 
 with tabs[5]:
-    # Practical Diagnostics
-    st.subheader("Practical Diagnostics & Recommendations")
-    st.write("Actionable analysis of clustering quality with specific recommendations.")
-    
-    ccsv_diag = st.text_input("Clusters CSV", value=st.session_state.get("clusters_csv","clusters.csv"), key="diag_csv")
-    ccoords_diag = st.text_input("Coordinates CSV", value=st.session_state.get("coords_csv","clusters_coords.csv"), key="diag_coords")
-    meta_diag = st.text_input("Metadata CSV", value=meta_path, key="diag_meta")
-    
-    if st.button("Run Practical Diagnostics"):
-        try:
-            # Load data with error handling
-            dfc = pd.read_csv(ccsv_diag) if os.path.exists(ccsv_diag) else pd.DataFrame()
-            dfcoords = pd.read_csv(ccoords_diag) if os.path.exists(ccoords_diag) else pd.DataFrame()
-            meta_df = pd.read_csv(meta_diag) if os.path.exists(meta_diag) else pd.DataFrame()
-            
-            # Fix cultures column if needed
-            if not dfc.empty and "cultures" in dfc.columns:
-                def parse_cultures(x):
-                    if isinstance(x, str) and x.startswith('['):
-                        try:
-                            import ast
-                            return ast.literal_eval(x)
-                        except:
-                            return []
-                    return x if isinstance(x, list) else []
-                
-                dfc["cultures"] = dfc["cultures"].apply(parse_cultures)
-            
-            # Run diagnostics
-            diagnostics, correlations = compute_practical_diagnostics(dfc, dfcoords, meta_df)
-            
-            # Display results
-            col1, col2 = st.columns([2, 1])
-            
-            with col1:
-                st.markdown("### Overall Assessment")
-                
-                trust_score = diagnostics.get("trust_score", 0)
-                trust_level = diagnostics.get("interpretation", {}).get("trust_level", "Unknown")
-                
-                # Color-coded trust score
-                if trust_score >= 7:
-                    st.success(f"Trust Score: {trust_score}/10 ({trust_level})")
-                elif trust_score >= 4:
-                    st.warning(f"Trust Score: {trust_score}/10 ({trust_level})")
-                else:
-                    st.error(f"Trust Score: {trust_score}/10 ({trust_level})")
-                
-                # Main issues
-                main_issues = diagnostics.get("interpretation", {}).get("main_issues", [])
-                if main_issues:
-                    st.markdown("**Priority Issues:**")
-                    for issue in main_issues:
-                        st.write(f"• {issue}")
-            
-            with col2:
-                st.markdown("### Key Metrics")
-                
-                metrics = {
-                    "Silhouette": diagnostics.get("silhouette", "N/A"),
-                    "Compactness": diagnostics.get("compactness", "N/A"),
-                    "Stability": diagnostics.get("stability", "N/A")
-                }
-                
-                for metric, value in metrics.items():
-                    if isinstance(value, float) and not pd.isna(value):
-                        st.metric(metric, f"{value:.3f}")
-                    else:
-                        st.metric(metric, "N/A")
-            
-            # Detailed recommendations
-            recommendations = diagnostics.get("recommendations", [])
-            if recommendations:
-                st.markdown("### Actionable Recommendations")
-                
-                for rec in recommendations:
-                    priority = rec.get("priority", "Medium")
-                    if priority == "High":
-                        st.error(f"**{rec['issue']}**")
-                    elif priority == "Medium":
-                        st.warning(f"**{rec['issue']}**")
-                    else:
-                        st.info(f"**{rec['issue']}**")
-                    
-                    st.write(f"Cause: {rec.get('cause', 'Unknown')}")
-                    st.write(f"Action: {rec.get('action', 'No specific action suggested')}")
-                    st.markdown("---")
-            
-            # Cluster characteristics
-            cluster_chars = diagnostics.get("cluster_characteristics", {})
-            if cluster_chars:
-                st.markdown("### Data Summary")
-                col1, col2, col3, col4 = st.columns(4)
-                
-                with col1:
-                    st.metric("Total Clusters", cluster_chars.get("total_clusters", 0))
-                with col2:
-                    st.metric("Total Items", cluster_chars.get("total_items", 0))
-                with col3:
-                    st.metric("Singleton Clusters", cluster_chars.get("singleton_clusters", 0))
-                with col4:
-                    st.metric("Largest Cluster", cluster_chars.get("largest_cluster_size", 0))
-            
-        except Exception as e:
-            st.error(f"Diagnostics failed: {e}")
-            st.write("Please check that your data files exist and are properly formatted.")
+    st.header('Annotate — Play Mode')
+    df = pd.DataFrame(list_proverbs(excluded=False))
+    if df.empty:
+        st.info('No active proverbs. Scrape or import first.')
+    else:
+        pos, neg = nearest_pairs(df.rename(columns={'id':'id','text':'text'}), 'text', k=8, hi=0.85, lo=0.35)
+        strategy = st.radio('Pair strategy', ['Surprise me','Likely same idea','Likely different idea','Cross‑language'], horizontal=True)
+        def pick_pair():
+            if strategy=='Likely same idea' and pos: return random.choice(pos)
+            if strategy=='Likely different idea' and neg: return random.choice(neg)
+            if strategy=='Cross‑language' and 'language' in df.columns:
+                i1,i2 = random.sample(range(len(df)),2); return (df.iloc[i1]['id'], df.iloc[i2]['id'], 0.0)
+            a,b = random.sample(df['id'].tolist(), 2); return (a,b,0.0)
+        if 'pair' not in st.session_state:
+            st.session_state['pair'] = pick_pair()
+        a,b,s = st.session_state['pair']
+        ra = df[df['id']==a].iloc[0]
+        rb = df[df['id']==b].iloc[0]
+        c1,c2 = st.columns(2)
+        with c1:
+            st.subheader('Proverb A')
+            st.write(ra['text']); st.caption(f"ID: {int(ra['id'])}")
+            if st.button('❌ Not a saying (A)'):
+                mark_excluded(int(ra['id']), True); st.success('Excluded A'); st.session_state['pair']=pick_pair(); st.rerun()
+        with c2:
+            st.subheader('Proverb B')
+            st.write(rb['text']); st.caption(f"ID: {int(rb['id'])}")
+            if st.button('❌ Not a saying (B)'):
+                mark_excluded(int(rb['id']), True); st.success('Excluded B'); st.session_state['pair']=pick_pair(); st.rerun()
+        d1,d2,d3 = st.columns(3)
+        if d1.button('✅ Must‑Link'):
+            add_constraint(int(ra['id']), int(rb['id']), 'must', user); st.session_state['pair']=pick_pair(); st.rerun()
+        if d2.button('🚫 Cannot‑Link'):
+            add_constraint(int(ra['id']), int(rb['id']), 'cannot', user); st.session_state['pair']=pick_pair(); st.rerun()
+        if d3.button('⏭️ Skip'):
+            st.session_state['pair']=pick_pair(); st.rerun()
+        st.markdown('---'); st.subheader('Live stats'); st.json(stats())
+
+with tabs[6]:
+    st.header('Candidates (Survival Score)')
+    df = pd.DataFrame(list_proverbs(excluded=False))
+    if df.empty or 'communities' not in st.session_state:
+        st.info('Need communities. Go to Graph → Communities first.')
+    else:
+        com = st.session_state['communities']
+        merged = df.merge(com, on='id', how='left').fillna({'community_id':-1})
+        rows = []
+        for c, g in merged.groupby('community_id'):
+            if c == -1: 
+                continue
+            rows.append({'community_id': int(c), 'size': int(len(g)), 'S': float(survival_score(g.to_dict('records')))})
+        cand = pd.DataFrame(rows).sort_values(['S','size'], ascending=[False,False])
+        st.dataframe(cand.head(100))
+        st.download_button('Download candidates.csv', cand.to_csv(index=False), 'candidates.csv', 'text/csv')
+
+with tabs[7]:
+    st.header('Leaderboard & Export')
+    st.subheader('Leaderboard'); st.dataframe(pd.DataFrame(leaderboard()))
+    st.subheader('Export annotations'); exp = export_annotations()
+    st.download_button('Download annotation_export.json', data=json.dumps(exp, ensure_ascii=False, indent=2), file_name='annotation_export.json', mime='application/json')
+    st.subheader('Download proverbs CSV')
+    df = pd.DataFrame(list_proverbs(excluded=False))
+    if df.empty:
+        st.info('No data.')
+    else:
+        st.download_button('Download proverbs.csv', df.to_csv(index=False), 'proverbs.csv', 'text/csv')
+    st.subheader('Download database')
+    DB_PATH = os.environ.get('WISDOM_DB_PATH', 'wisdom.db')
+    if os.path.exists(DB_PATH):
+        with open(DB_PATH,'rb') as f:
+            st.download_button('Download wisdom.db', f.read(), 'wisdom.db', 'application/octet-stream')
