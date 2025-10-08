@@ -8,6 +8,8 @@ def connect():
 def init_db():
     con = connect(); cur = con.cursor()
     cur.executescript("""
+    PRAGMA journal_mode=WAL;
+    PRAGMA synchronous=NORMAL;
     CREATE TABLE IF NOT EXISTS sources(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT, url TEXT UNIQUE, tags TEXT, enabled INTEGER DEFAULT 1, added_at REAL
@@ -86,6 +88,16 @@ def add_constraint(a_id, b_id, label, user):
     con = connect(); cur = con.cursor()
     cur.execute("INSERT INTO constraints(a_id,b_id,label,user,created_at) VALUES(?,?,?,?,?)",
                 (a_id, b_id, label, user, time.time()))
+    con.commit(); con.close()
+
+def bulk_apply(pending_ops):
+    con = connect(); cur = con.cursor()
+    for op in pending_ops:
+        if op.get('op') == 'exclude':
+            cur.execute("UPDATE proverbs SET excluded=1 WHERE id=?", (op['pid'],))
+        elif op.get('op') == 'constraint':
+            cur.execute("INSERT INTO constraints(a_id,b_id,label,user,created_at) VALUES(?,?,?,?,?)",
+                        (op['a'], op['b'], op['label'], op.get('user'), time.time()))
     con.commit(); con.close()
 
 def stats():
