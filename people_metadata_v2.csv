@@ -1,4 +1,158 @@
 people,region,language_family,climate_zone,coastal,is_island,maritime_orientation,trade_route_proximity,migration_hub,subsistence_bias,staple_crop,legal_origin,urbanization_level,individualism_proxy,uncertainty_avoidance_proxy
-English,Europe (NW),Germanic,Temperate,High,No,High,High,Med,Mixed,Wheat,Common Law,High,High,Med
-Romanian,Europe (SE),Romance,Temperate-Continental,Med,No,Med,Med,Low,Mixed,Wheat,Civil Law,Med,Med,Med
-Japanese,East Asia,Japonic,Temperate-Humid,High,Yes,High,High,High,Mixed,Rice,Civil Law,High,Collectivist,High
+Romanian,Europe (SE),Indo-European · Romance,Temperate/Continental,N,N,Low,None,Med,Agriculture,Wheat,CivilLaw,Med,Med,High
+Moldovan,Europe (SE),Indo-European · Romance,Temperate/Continental,N,N,Low,None,Med,Agriculture,Wheat,Mixed,Med,Med,Med
+Italian,Europe (S),Indo-European · Romance,Mediterranean,Partial,N,Med,Mediterranean,Med,Agriculture,Wheat,CivilLaw,Med,Med,High
+Spanish,Europe (SW)/Latin America,Indo-European · Romance,Mediterranean/Subtropical,Partial,N,Med,Atlantic,Med,Agriculture,Wheat,CivilLaw,Med,Med,High
+Catalan,Europe (SW),Indo-European · Romance,Mediterranean,N,N,Low,None,Med,Agriculture,Wheat,Mixed,Med,Med,Med
+Galician,Europe (SW),Indo-European · Romance,Atlantic/Maritime,N,N,Low,None,Med,Agriculture,Wheat,Mixed,Med,Med,Med
+Portuguese,Europe (SW)/Brazil,Indo-European · Romance,Mediterranean/Tropical,Partial,N,Med,Atlantic,Med,Agriculture,Wheat,CivilLaw,Med,Med,High
+French,Europe (W),Indo-European · Romance,Temperate/Maritime,Partial,N,Med,Atlantic,Med,Agriculture,Wheat,CivilLaw,High,Med,High
+Occitan,Europe (SW),Indo-European · Romance,Mediterranean,N,N,Low,None,Med,Agriculture,Wheat,Mixed,Med,Med,Med
+Sardinian,Europe (S),Indo-European · Romance,Mediterranean,N,N,Low,None,Med,Agriculture,Wheat,Mixed,Med,Med,Med
+English,Europe (NW),Indo-European · Germanic,Temperate/Maritime,Partial,N,Med,Atlantic,Med,Agriculture,Mixed,CommonLaw,Med,High,Low
+German,Europe (Central),Indo-European · Germanic,Temperate/Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,High,High,Med
+Dutch,Europe (NW),Indo-European · Germanic,Maritime/Temperate,Partial,N,Med,Atlantic,Med,Agriculture,Mixed,Mixed,Med,High,Low
+Afrikaans,Africa (S),Indo-European · Germanic,Semi-arid/Temperate,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Swedish,Europe (N),Indo-European · Germanic,Temperate/Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,High,High,Low
+Norwegian,Europe (N),Indo-European · Germanic,Maritime/Subarctic,N,N,Low,None,Med,Agriculture,Mixed,Mixed,High,High,Med
+Danish,Europe (N),Indo-European · Germanic,Maritime/Temperate,N,N,Low,None,Med,Agriculture,Mixed,Mixed,High,High,Low
+Icelandic,Europe (N),Indo-European · Germanic,Subarctic/Maritime,N,N,Low,None,Med,Agriculture,Mixed,Mixed,High,High,Med
+Faroese,Europe (N),Indo-European · Germanic,Maritime/Subarctic,N,N,Low,None,Med,Agriculture,Mixed,Mixed,High,Med,Med
+Yiddish,Europe (Central/E),Indo-European · Germanic,Temperate/Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Russian,Europe/Asia (N),Indo-European · Slavic,Continental/Subarctic,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Ukrainian,Europe (E),Indo-European · Slavic,Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Belarusian,Europe (E),Indo-European · Slavic,Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Polish,Europe (Central/E),Indo-European · Slavic,Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Czech,Europe (Central),Indo-European · Slavic,Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,High,Med,Med
+Slovak,Europe (Central),Indo-European · Slavic,Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,High,Med,Med
+Slovene,Europe (SE),Indo-European · Slavic,Alpine/Mediterranean,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Serbian,Europe (SE),Indo-European · Slavic,Continental/Mediterranean,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Croatian,Europe (SE),Indo-European · Slavic,Continental/Mediterranean,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Bosnian,Europe (SE),Indo-European · Slavic,Continental/Mediterranean,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Macedonian,Europe (SE),Indo-European · Slavic,Continental/Mediterranean,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Bulgarian,Europe (SE),Indo-European · Slavic,Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Montenegrin,Europe (SE),Indo-European · Slavic,Continental/Mediterranean,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Greek,Europe (SE),Indo-European · Hellenic,Mediterranean,Partial,N,Med,Mediterranean,Med,Agriculture,Mixed,CivilLaw,Med,Med,High
+Albanian,Europe (SE),Indo-European · Albanian,Mediterranean/Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Latvian,Europe (NE),Indo-European · Baltic,Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Lithuanian,Europe (NE),Indo-European · Baltic,Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Irish,Europe (W),Indo-European · Celtic,Maritime/Temperate,N,N,Low,None,Med,Agriculture,Mixed,CommonLaw,High,Med,Med
+Scottish Gaelic,Europe (NW),Indo-European · Celtic,Maritime/Temperate,N,N,Low,None,Med,Agriculture,Mixed,CommonLaw,Med,Med,Med
+Welsh,Europe (W),Indo-European · Celtic,Maritime/Temperate,N,N,Low,None,Med,Agriculture,Mixed,CommonLaw,High,Med,Med
+Breton,Europe (W),Indo-European · Celtic,Maritime/Temperate,N,N,Low,None,Med,Agriculture,Mixed,Mixed,High,Med,Med
+Basque,Europe (SW),Language isolate,Atlantic/Mediterranean,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Finnish,Europe (NE),Uralic,Boreal/Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Estonian,Europe (NE),Uralic,Boreal/Maritime,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Hungarian,Europe (Central),Uralic,Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,High,Med,Med
+Turkish,Anatolia/West Asia,Turkic,Mediterranean/Steppe,Partial,N,Med,InlandCaravan,Med,Pastoralism,Mixed,CivilLaw,Med,Low,Med
+Kurdish,West Asia,Indo-European · Iranian,Steppe/Mountain,N,N,Low,InlandCaravan,Med,Pastoralism,Mixed,Mixed,Med,Med,Med
+Armenian,Caucasus/West Asia,Indo-European · Armenian,Continental/Mountain,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Georgian,Caucasus,Kartvelian,Mountain/Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Azeri (Azerbaijani),Caucasus/West Asia,Turkic,Steppe/Semi-arid,N,N,Low,InlandCaravan,Med,Pastoralism,Mixed,Mixed,Med,Med,Med
+Persian (Farsi),Iran,Indo-European · Iranian,Arid/Steppe,N,N,Low,InlandCaravan,Med,Pastoralism,Mixed,Mixed,Med,Low,Med
+Tajik,Central Asia,Indo-European · Iranian,Continental/Steppe,N,N,Low,InlandCaravan,Med,Pastoralism,Mixed,Mixed,Low,Med,Med
+Pashto,Afghanistan/Pakistan,Indo-European · Iranian,Mountain/Arid,N,N,Low,None,Med,Pastoralism,Mixed,Mixed,Med,Med,Med
+Arabic (Egyptian),North Africa,Afro-Asiatic · Semitic,Arid/Mediterranean,N,N,Low,None,Med,Pastoralism,Mixed,CivilLaw,Low,Low,Med
+Arabic (Levantine),Levant,Afro-Asiatic · Semitic,Mediterranean/Steppe,N,N,Low,InlandCaravan,Med,Pastoralism,Mixed,CivilLaw,Med,Low,Med
+Arabic (Gulf),Arabian Peninsula,Afro-Asiatic · Semitic,Arid/Desert,N,N,Low,None,Med,Pastoralism,Mixed,CivilLaw,Med,Low,Med
+Arabic (Maghrebi),Northwest Africa,Afro-Asiatic · Semitic,Semi-arid/Mediterranean,N,N,Low,None,Med,Agriculture,Mixed,CivilLaw,Low,Low,Med
+Hebrew,Israel,Afro-Asiatic · Semitic,Mediterranean/Arid,N,N,Low,None,Med,Pastoralism,Mixed,Mixed,Med,Med,Med
+Assyrian Neo-Aramaic,Iraq/Iran/Syria,Afro-Asiatic · Semitic,Arid/Mountain,N,N,Low,None,Med,Pastoralism,Mixed,Mixed,Med,Med,Med
+Hindi,South Asia,Indo-European · Indo-Aryan,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Urdu,South Asia,Indo-European · Indo-Aryan,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Bengali,South Asia,Indo-European · Indo-Aryan,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Punjabi,South Asia,Indo-European · Indo-Aryan,Subtropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Marathi,South Asia,Indo-European · Indo-Aryan,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Gujarati,South Asia,Indo-European · Indo-Aryan,Tropical/Semi-arid,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Sindhi,South Asia,Indo-European · Indo-Aryan,Arid/Subtropical,N,N,Low,None,Med,Pastoralism,Mixed,Mixed,Med,Med,Med
+Sinhalese,Sri Lanka,Indo-European · Indo-Aryan,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Nepali,Himalaya,Indo-European · Indo-Aryan,Mountain/Temperate,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Kashmiri,Himalaya,Indo-European · Indo-Aryan,Mountain/Continental,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Maithili,South Asia,Indo-European · Indo-Aryan,Subtropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Oriya (Odia),South Asia,Indo-European · Indo-Aryan,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Tamil,South India/Sri Lanka,Dravidian,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Telugu,South India,Dravidian,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Kannada,South India,Dravidian,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Malayalam,South India,Dravidian,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Tulu,South India,Dravidian,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Bodo,Northeast India,Sino-Tibetan,Subtropical/Monsoon,N,N,Low,None,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Meitei (Manipuri),Northeast India,Sino-Tibetan,Subtropical/Monsoon,N,N,Low,None,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Dzongkha,Bhutan,Sino-Tibetan,Mountain/Temperate,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Tibetan,Tibet Plateau,Sino-Tibetan,Highland/Alpine,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Mongolian,Mongolia/China,Mongolic,Steppe/Continental,N,N,Low,InlandCaravan,Med,Pastoralism,Mixed,Mixed,Med,Med,Med
+Uyghur,Xinjiang,Turkic,Arid/Continental,N,N,Low,None,Med,Pastoralism,Mixed,Mixed,Med,Med,Med
+Kazakh,Central Asia,Turkic,Steppe/Continental,N,N,Low,InlandCaravan,Med,Pastoralism,Mixed,Mixed,Low,Med,Med
+Kyrgyz,Central Asia,Turkic,Mountain/Continental,N,N,Low,SilkRoad,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Uzbek,Central Asia,Turkic,Arid/Continental,N,N,Low,SilkRoad,Med,Pastoralism,Mixed,Mixed,Low,Med,Med
+Turkmen,Central Asia,Turkic,Arid/Desert,N,N,Low,SilkRoad,Med,Pastoralism,Mixed,Mixed,Low,Med,Med
+Mandarin Chinese,East Asia,Sino-Tibetan,Monsoon/Temperate,N,N,Low,SilkRoad,Med,Agriculture,Rice,Mixed,Med,Low,Med
+Cantonese (Yue),East Asia,Sino-Tibetan,Subtropical/Monsoon,N,N,Low,SilkRoad,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Wu Chinese,East Asia,Sino-Tibetan,Humid Subtropical,N,N,Low,SilkRoad,Med,Agriculture,Mixed,Mixed,Med,Low,Med
+Hakka,East Asia,Sino-Tibetan,Subtropical/Monsoon,N,N,Low,SilkRoad,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Min Nan (Hokkien),East Asia,Sino-Tibetan,Subtropical/Monsoon,N,N,Low,SilkRoad,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Korean,East Asia,Koreanic,Temperate/Continental,N,N,Low,SilkRoad,Med,Agriculture,Mixed,Mixed,Med,Low,Med
+Japanese,East Asia,Japonic,Humid Subtropical/Temperate,N,N,Low,SilkRoad,Med,Agriculture,Mixed,Mixed,Med,Low,Med
+Thai,Southeast Asia,Tai-Kadai,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Low,Med
+Lao,Southeast Asia,Tai-Kadai,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Shan,Southeast Asia,Tai-Kadai,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Vietnamese,Southeast Asia,Austroasiatic,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Low,Med
+Khmer,Southeast Asia,Austroasiatic,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Mon,Southeast Asia,Austroasiatic,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Burmese (Myanmar),Southeast Asia,Sino-Tibetan,Tropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Malay (Bahasa),Southeast Asia,Austronesian,Tropical,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Indonesian,Southeast Asia,Austronesian,Tropical,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Javanese,Southeast Asia,Austronesian,Tropical,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Sundanese,Southeast Asia,Austronesian,Tropical,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Balinese,Southeast Asia,Austronesian,Tropical,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Tagalog (Filipino),Philippines,Austronesian,Tropical/Monsoon,Y,Y,High,IndianOcean,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Cebuano,Philippines,Austronesian,Tropical,Y,Y,High,IndianOcean,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Ilocano,Philippines,Austronesian,Tropical,Y,Y,High,IndianOcean,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Hmong,Southeast Asia,Hmong-Mien,Subtropical/Monsoon,N,N,Low,None,Med,Agriculture,Rice,Mixed,Med,Med,Med
+Bikol,Philippines,Austronesian,Tropical,Y,Y,High,IndianOcean,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Amazigh (Berber),North Africa,Afro-Asiatic · Berber,Semi-arid/Mediterranean,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Hausa,West Africa,Afro-Asiatic · Chadic,Sahel/Savanna,N,N,Low,None,Med,Agriculture,Millet,Mixed,Low,Med,Med
+Yoruba,West Africa,Niger-Congo,Tropical/Savanna,N,N,Low,None,Med,Agriculture,Maize,Mixed,Low,Med,Med
+Igbo,West Africa,Niger-Congo,Tropical/Savanna,N,N,Low,None,Med,Agriculture,Maize,Mixed,Low,Med,Med
+Akan (Twi/Fante),West Africa,Niger-Congo,Tropical/Savanna,N,N,Low,None,Med,Agriculture,Maize,Mixed,Low,Med,Med
+Wolof,West Africa,Niger-Congo,Tropical/Savanna,N,N,Low,None,Med,Agriculture,Maize,Mixed,Low,Med,Med
+Fula (Fulani),West/Central Africa,Niger-Congo (Atlantic),Sahel/Savanna,N,N,Low,None,Med,Agriculture,Millet,Mixed,Low,Med,Med
+Ewe,West Africa,Niger-Congo,Tropical,N,N,Low,None,Med,Agriculture,Maize,Mixed,Low,Med,Med
+Kongo,Central Africa,Niger-Congo,Tropical,N,N,Low,None,Med,Agriculture,Maize,Mixed,Low,Med,Med
+Lingala,Central Africa,Niger-Congo,Tropical,N,N,Low,None,Med,Agriculture,Maize,Mixed,Low,Med,Med
+Swahili,East Africa,Niger-Congo (Bantu),Tropical/Coastal,N,N,Low,None,Med,Agriculture,Maize,Mixed,Low,Med,Med
+Shona,Southern Africa,Niger-Congo (Bantu),Tropical/Highveld,N,N,Low,None,Med,Agriculture,Maize,Mixed,Low,Med,Med
+Zulu,Southern Africa,Niger-Congo (Bantu),Subtropical/Temperate,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Xhosa,Southern Africa,Niger-Congo (Bantu),Subtropical/Temperate,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Sesotho,Southern Africa,Niger-Congo (Bantu),Temperate/Highland,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Tswana,Southern Africa,Niger-Congo (Bantu),Semi-arid,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Herero,Southern Africa,Niger-Congo (Bantu),Semi-arid,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Amharic,Ethiopia,Afro-Asiatic · Semitic,Highland,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Tigrinya,Ethiopia/Eritrea,Afro-Asiatic · Semitic,Highland,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Oromo,Ethiopia,Afro-Asiatic · Cushitic,Highland/Savanna,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Somali,Horn of Africa,Afro-Asiatic · Cushitic,Arid/Semi-arid,N,N,Low,None,Med,Pastoralism,Mixed,Mixed,Low,Med,Med
+Maasai,East Africa,Nilo-Saharan,Savanna/Semi-arid,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Dinka,South Sudan,Nilo-Saharan,Savanna,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Nuer,South Sudan,Nilo-Saharan,Savanna,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Kisii (Gusii),East Africa,Niger-Congo (Bantu),Tropical/Highland,N,N,Low,None,Med,Agriculture,Maize,Mixed,Low,Med,Med
+Berber (Kabyle),North Africa,Afro-Asiatic · Berber,Mediterranean/Mountain,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Quechua,Andes,Quechuan,Highland/Alpine,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Aymara,Andes,Aymaran,Highland/Alpine,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Low,Med,Med
+Guaraní,Paraguay/Brazil,Tupian,Subtropical,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Mapudungun,Chile/Argentina,Araucanian,Temperate,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Nahuatl,Mexico,Uto-Aztecan,Highland,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Maya (Yucatec),Mexico,Mayan,Tropical,N,N,Low,None,Med,Agriculture,Maize,Mixed,Med,Med,Med
+K'iche' (Quiché),Guatemala,Mayan,Highland,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Navajo (Diné),USA (SW),Athabaskan,Arid/Highland,N,N,Low,None,Med,Pastoralism,Mixed,Mixed,High,Med,Med
+Cherokee,USA (SE),Iroquoian,Temperate,N,N,Low,None,Med,Agriculture,Mixed,Mixed,High,Med,Med
+Inuktitut,Arctic,Eskaleut (Inuit-Yupik-Unangan),Arctic/Polar,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Haitian Creole,Caribbean,French-based Creole,Tropical,Y,Y,High,Atlantic,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Garifuna,Caribbean/Central America,Arawakan/Carib influence,Tropical,Y,Y,High,Atlantic,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Tzotzil,Mexico,Mayan,Highland,N,N,Low,None,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Maori,New Zealand,Austronesian,Maritime/Temperate,Y,Y,High,IndianOcean,Med,Agriculture,Mixed,Mixed,Med,Med,Med
+Samoan,Polynesia,Austronesian,Tropical/Maritime,Y,Y,High,IndianOcean,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Tongan,Polynesia,Austronesian,Tropical/Maritime,Y,Y,High,IndianOcean,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Fijian,Melanesia,Austronesian,Tropical/Maritime,N,N,Low,None,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Hawaiian,Hawai'i,Austronesian,Tropical/Maritime,Y,Y,High,IndianOcean,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Tahitan (Reo Tahiti),Polynesia,Austronesian,Tropical/Maritime,Y,Y,High,IndianOcean,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Tok Pisin,Papua New Guinea,English-based Creole,Tropical,N,N,Low,None,Med,Agriculture,Maize,Mixed,Med,Med,Med
+Bislama,Vanuatu,English-based Creole,Tropical,N,N,Low,None,Med,Agriculture,Maize,Mixed,Med,Med,Med
