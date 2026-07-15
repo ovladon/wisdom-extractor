@@ -55,16 +55,6 @@ wisdom-extractor/
 └─ CODE_OF_CONDUCT.md
 ```
 
-## How to publish on GitHub (browser workflow)
-1. Sign in and open **New repository** (Owner: **ovladon**).
-2. **Repository name**: `wisdom-extractor`. Visibility: Public.  
-   **Important**: *Do not* tick “Initialize with a README/ .gitignore/ license” to avoid merge conflicts.
-3. Click **Create repository**.
-4. On the next page, click **“uploading an existing file”**.  
-   From your computer, unzip the archive from this chat and **drag & drop the *contents* of the `wisdom-extractor/` folder** (not the folder itself) into the upload area. This preserves the folder tree (including `.github/`).
-5. Scroll down, add a commit message (e.g., "Initial commit"), and click **Commit changes**.
-6. Open the repo → **Settings → Pages** if you later want to enable docs (optional).
-
 ## Run locally
 ```bash
 streamlit run app.py
