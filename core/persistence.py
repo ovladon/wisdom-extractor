@@ -1,24 +1,50 @@
-import sqlite3, time, json, os, hashlib
+"""SQLite persistence layer (from Wisdom Lab v18, extended).
+
+Adds to the v18 schema: people / claim / quality_score / cluster_id columns,
+automatic in-place migration of older wisdom.db files, bulk inserts, and
+a culture backfill that recovers the `people` label from source URLs.
+"""
+import sqlite3, time, os, hashlib, re, csv
 
 DB_PATH = os.environ.get("WISDOM_DB_PATH", "wisdom.db")
 
+PROVERB_COLUMNS = [
+    ("source_id", "INTEGER"),
+    ("text", "TEXT"),
+    ("people", "TEXT"),          # culture label, e.g. "Romanian" (paper's `people`)
+    ("language", "TEXT"),
+    ("family", "TEXT"),          # language family (Germanic, Romance, ...)
+    ("region", "TEXT"),
+    ("original", "TEXT"),        # mother-tongue original if different from text
+    ("claim", "TEXT"),           # canonicalized proposition (paper's `claim`)
+    ("quality_score", "INTEGER"),
+    ("cluster_id", "INTEGER"),
+    ("first_seen", "INTEGER"),
+    ("last_seen", "INTEGER"),
+    ("url", "TEXT"),
+    ("hash", "TEXT UNIQUE"),
+    ("excluded", "INTEGER DEFAULT 0"),
+    ("added_at", "REAL"),
+]
+
+
 def connect():
-    return sqlite3.connect(DB_PATH, check_same_thread=False)
+    con = sqlite3.connect(DB_PATH, check_same_thread=False)
+    con.execute("PRAGMA journal_mode=WAL")
+    con.execute("PRAGMA synchronous=NORMAL")
+    return con
+
 
 def init_db():
     con = connect(); cur = con.cursor()
     cur.executescript("""
-    PRAGMA journal_mode=WAL;
-    PRAGMA synchronous=NORMAL;
     CREATE TABLE IF NOT EXISTS sources(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       name TEXT, url TEXT UNIQUE, tags TEXT, enabled INTEGER DEFAULT 1, added_at REAL
     );
     CREATE TABLE IF NOT EXISTS proverbs(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
-      source_id INTEGER, text TEXT, language TEXT, family TEXT, region TEXT,
-      first_seen INTEGER, last_seen INTEGER, url TEXT, hash TEXT UNIQUE,
-      excluded INTEGER DEFAULT 0, idea_formula TEXT, frame TEXT, added_at REAL
+      source_id INTEGER, text TEXT, hash TEXT UNIQUE
     );
     CREATE TABLE IF NOT EXISTS constraints(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -29,10 +55,25 @@ def init_db():
       username TEXT UNIQUE, created_at REAL
     );
     """)
+    # migrate: add any missing proverb columns (upgrades v15-v18 databases in place)
+    cur.execute("PRAGMA table_info(proverbs)")
+    have = {r[1] for r in cur.fetchall()}
+    for col, typ in PROVERB_COLUMNS:
+        if col not in have:
+            cur.execute(f"ALTER TABLE proverbs ADD COLUMN {col} {typ}")
+    cur.executescript("""
+    CREATE INDEX IF NOT EXISTS idx_proverbs_excluded ON proverbs(excluded);
+    CREATE INDEX IF NOT EXISTS idx_proverbs_people ON proverbs(people);
+    CREATE INDEX IF NOT EXISTS idx_proverbs_cluster ON proverbs(cluster_id);
+    """)
     con.commit(); con.close()
 
+
 def _hash_text(t):
-    return hashlib.sha256(t.strip().lower().encode("utf-8")).hexdigest()
+    return hashlib.sha256(str(t).strip().lower().encode("utf-8")).hexdigest()
+
+
+# ---------- sources ----------
 
 def upsert_source(name, url, tags=""):
     con = connect(); cur = con.cursor()
@@ -41,48 +82,197 @@ def upsert_source(name, url, tags=""):
     con.commit()
     cur.execute("SELECT id FROM sources WHERE url=?", (url,))
     row = cur.fetchone()
-    sid = row[0] if row else None
     con.close()
-    return sid
+    return row[0] if row else None
+
 
 def list_sources(enabled_only=False):
     con = connect(); cur = con.cursor()
     cur.execute("SELECT id,name,url,tags,enabled FROM sources" + (" WHERE enabled=1" if enabled_only else ""))
     rows = cur.fetchall(); con.close()
-    return [{"id":r[0],"name":r[1],"url":r[2],"tags":r[3] or "", "enabled":bool(r[4])} for r in rows]
+    return [{"id": r[0], "name": r[1], "url": r[2], "tags": r[3] or "", "enabled": bool(r[4])} for r in rows]
 
-def insert_proverb(source_id, text, url, language=None, family=None, region=None, first_seen=None, last_seen=None):
-    h = _hash_text(text)
+
+# ---------- proverbs ----------
+
+def insert_proverb(source_id, text, url, people=None, language=None, family=None,
+                   region=None, original=None, first_seen=None, last_seen=None):
     con = connect(); cur = con.cursor()
     try:
-        cur.execute("""INSERT INTO proverbs(source_id,text,language,family,region,first_seen,last_seen,url,hash,added_at)
-                       VALUES(?,?,?,?,?,?,?,?,?,?)""",
-                    (source_id, text, language, family, region, first_seen, last_seen, url, h, time.time()))
-        con.commit()
-        pid = cur.lastrowid
+        cur.execute("""INSERT INTO proverbs(source_id,text,people,language,family,region,original,
+                                            first_seen,last_seen,url,hash,added_at)
+                       VALUES(?,?,?,?,?,?,?,?,?,?,?,?)""",
+                    (source_id, text, people, language, family, region, original,
+                     first_seen, last_seen, url, _hash_text(text), time.time()))
+        con.commit(); pid = cur.lastrowid
     except sqlite3.IntegrityError:
         pid = None
     con.close()
     return pid
 
-def list_proverbs(excluded=False):
+
+def bulk_insert_proverbs(rows):
+    """rows: list of dicts with keys matching insert_proverb args. Returns count inserted."""
     con = connect(); cur = con.cursor()
-    cur.execute("SELECT id,text,language,family,region,first_seen,last_seen,excluded,idea_formula,frame FROM proverbs" + (" WHERE excluded=0" if not excluded else ""))
+    now = time.time(); inserted = 0
+    for r in rows:
+        try:
+            cur.execute("""INSERT INTO proverbs(source_id,text,people,language,family,region,original,
+                                                first_seen,last_seen,url,hash,quality_score,added_at)
+                           VALUES(?,?,?,?,?,?,?,?,?,?,?,?,?)""",
+                        (r.get("source_id"), r["text"], r.get("people"), r.get("language"),
+                         r.get("family"), r.get("region"), r.get("original"),
+                         r.get("first_seen"), r.get("last_seen"), r.get("url"),
+                         _hash_text(r["text"]), r.get("quality_score"), now))
+            inserted += 1
+        except sqlite3.IntegrityError:
+            continue
+    con.commit(); con.close()
+    return inserted
+
+
+def list_proverbs(excluded=False, with_claims_only=False):
+    con = connect(); cur = con.cursor()
+    q = """SELECT id,text,people,language,family,region,original,claim,quality_score,
+                  cluster_id,first_seen,last_seen,url,excluded FROM proverbs"""
+    conds = []
+    if not excluded:
+        conds.append("excluded=0")
+    if with_claims_only:
+        conds.append("claim IS NOT NULL AND claim != ''")
+    if conds:
+        q += " WHERE " + " AND ".join(conds)
+    cur.execute(q)
     rows = cur.fetchall(); con.close()
-    return [{
-        "id":r[0], "text":r[1], "language":r[2], "family":r[3], "region":r[4],
-        "first_seen":r[5], "last_seen":r[6], "excluded":bool(r[7]), "idea_formula":r[8], "frame":r[9]
-    } for r in rows]
+    keys = ["id", "text", "people", "language", "family", "region", "original", "claim",
+            "quality_score", "cluster_id", "first_seen", "last_seen", "url", "excluded"]
+    return [dict(zip(keys, r)) for r in rows]
+
 
 def mark_excluded(pid, excluded=True):
     con = connect(); cur = con.cursor()
     cur.execute("UPDATE proverbs SET excluded=? WHERE id=?", (1 if excluded else 0, pid))
     con.commit(); con.close()
 
-def save_proposition(pid, idea_formula, frame):
+
+def bulk_mark_excluded(pids, excluded=True):
     con = connect(); cur = con.cursor()
-    cur.execute("UPDATE proverbs SET idea_formula=?, frame=? WHERE id=?", (idea_formula, frame, pid))
+    cur.executemany("UPDATE proverbs SET excluded=? WHERE id=?",
+                    [(1 if excluded else 0, int(p)) for p in pids])
     con.commit(); con.close()
+
+
+def save_claims(id_claim_quality):
+    """id_claim_quality: iterable of (id, claim, quality_score)."""
+    con = connect(); cur = con.cursor()
+    cur.executemany("UPDATE proverbs SET claim=?, quality_score=? WHERE id=?",
+                    [(c, q, i) for i, c, q in id_claim_quality])
+    con.commit(); con.close()
+
+
+def save_clusters(id_cluster):
+    con = connect(); cur = con.cursor()
+    cur.execute("UPDATE proverbs SET cluster_id=NULL")
+    cur.executemany("UPDATE proverbs SET cluster_id=? WHERE id=?",
+                    [(int(c), int(i)) for i, c in id_cluster])
+    con.commit(); con.close()
+
+
+def set_people(id_people):
+    con = connect(); cur = con.cursor()
+    cur.executemany("UPDATE proverbs SET people=? WHERE id=?", [(p, int(i)) for i, p in id_people])
+    con.commit(); con.close()
+
+
+# ---------- culture backfill ----------
+
+_URL_PEOPLE_RX = [
+    re.compile(r"/wiki/(?:Category:)?([A-Za-z%C4%81%C4%93\-_]+?)_(?:proverbs|sayings)", re.I),
+    re.compile(r"/wiki/List_of_([A-Za-z\-_]+?)_proverbs", re.I),
+]
+
+
+def infer_people_from_url(url, source_name=""):
+    """Recover the culture label from a Wikiquote/Wiktionary/Wikipedia URL or source name."""
+    for rx in _URL_PEOPLE_RX:
+        m = rx.search(str(url) or "")
+        if m:
+            return m.group(1).replace("_", " ").replace("%C4%81", "ā").replace("%C4%93", "ē").strip().title()
+    m = re.search(r"(?:–|\-|:)\s*([A-Za-zāē ]+?)\s+proverbs", str(source_name), re.I)
+    if m:
+        return m.group(1).strip().title()
+    return None
+
+
+def backfill_people_from_urls():
+    """Fill missing `people` labels by parsing each row's page URL. Returns count updated."""
+    con = connect(); cur = con.cursor()
+    cur.execute("SELECT id,url FROM proverbs WHERE (people IS NULL OR people='') AND url IS NOT NULL")
+    rows = cur.fetchall()
+    updates = []
+    for pid, url in rows:
+        p = infer_people_from_url(url)
+        if p:
+            updates.append((p, pid))
+    cur.executemany("UPDATE proverbs SET people=? WHERE id=?", updates)
+    con.commit(); con.close()
+    return len(updates)
+
+
+def backfill_attestation_years(source_years_json=None):
+    """Fill first_seen ('attested no later than' year) where missing.
+
+    Priority: earliest citation year found in the raw `original` or `text`
+    (e.g. 'von Düringsfield … (1875)'), else the publication year of a dated
+    source matched by URL substring from data/source_years.json.
+    Returns (n_from_citations, n_from_sources).
+    """
+    from .cleaner import extract_attestation_year
+    src_years = {}
+    if source_years_json and os.path.exists(source_years_json):
+        raw = __import__("json").load(open(source_years_json, encoding="utf-8"))
+        src_years = {k: v for k, v in raw.items() if isinstance(v, int)}
+    con = connect(); cur = con.cursor()
+    cur.execute("SELECT id, text, original, url FROM proverbs WHERE first_seen IS NULL")
+    rows = cur.fetchall()
+    from_cit, from_src = [], []
+    for pid, text, original, url in rows:
+        year = extract_attestation_year(original or "") or extract_attestation_year(text or "")
+        if year:
+            from_cit.append((year, pid))
+            continue
+        for frag, y in src_years.items():
+            if url and frag in url:
+                from_src.append((y, pid))
+                break
+    cur.executemany("UPDATE proverbs SET first_seen=? WHERE id=?", from_cit + from_src)
+    con.commit(); con.close()
+    return len(from_cit), len(from_src)
+
+
+def enrich_family_region(metadata_csv):
+    """Fill family/region from a people metadata CSV (people,region,language_family,...)."""
+    if not os.path.exists(metadata_csv):
+        return 0
+    meta = {}
+    with open(metadata_csv, newline="", encoding="utf-8-sig") as f:
+        content = f.read().lstrip("\n\r ")
+    for row in csv.DictReader(content.splitlines()):
+        if row.get("people"):
+            meta[row["people"].strip().lower()] = (row.get("language_family", ""), row.get("region", ""))
+    con = connect(); cur = con.cursor()
+    cur.execute("SELECT id,people FROM proverbs WHERE people IS NOT NULL AND (family IS NULL OR family='')")
+    updates = []
+    for pid, people in cur.fetchall():
+        hit = meta.get(str(people).strip().lower())
+        if hit:
+            updates.append((hit[0], hit[1], pid))
+    cur.executemany("UPDATE proverbs SET family=?, region=? WHERE id=?", updates)
+    con.commit(); con.close()
+    return len(updates)
+
+
+# ---------- constraints / annotation ----------
 
 def add_constraint(a_id, b_id, label, user):
     con = connect(); cur = con.cursor()
@@ -90,41 +280,62 @@ def add_constraint(a_id, b_id, label, user):
                 (a_id, b_id, label, user, time.time()))
     con.commit(); con.close()
 
+
 def bulk_apply(pending_ops):
     con = connect(); cur = con.cursor()
     for op in pending_ops:
-        if op.get('op') == 'exclude':
-            cur.execute("UPDATE proverbs SET excluded=1 WHERE id=?", (op['pid'],))
-        elif op.get('op') == 'constraint':
+        if op.get("op") == "exclude":
+            cur.execute("UPDATE proverbs SET excluded=1 WHERE id=?", (op["pid"],))
+        elif op.get("op") == "constraint":
             cur.execute("INSERT INTO constraints(a_id,b_id,label,user,created_at) VALUES(?,?,?,?,?)",
-                        (op['a'], op['b'], op['label'], op.get('user'), time.time()))
+                        (op["a"], op["b"], op["label"], op.get("user"), time.time()))
     con.commit(); con.close()
+
+
+def list_constraints(label=None):
+    con = connect(); cur = con.cursor()
+    if label:
+        cur.execute("SELECT a_id,b_id,label,user FROM constraints WHERE label=?", (label,))
+    else:
+        cur.execute("SELECT a_id,b_id,label,user FROM constraints")
+    rows = cur.fetchall(); con.close()
+    return [{"a_id": r[0], "b_id": r[1], "label": r[2], "user": r[3]} for r in rows]
+
 
 def stats():
     con = connect(); cur = con.cursor()
-    cur.execute("SELECT COUNT(*) FROM proverbs WHERE excluded=0"); n_prov = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM constraints WHERE label='must'"); n_must = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM constraints WHERE label='cannot'"); n_cannot = cur.fetchone()[0]
-    cur.execute("SELECT COUNT(*) FROM proverbs WHERE excluded=1"); n_excl = cur.fetchone()[0]
+    out = {}
+    for key, q in [
+        ("proverbs", "SELECT COUNT(*) FROM proverbs WHERE excluded=0"),
+        ("excluded", "SELECT COUNT(*) FROM proverbs WHERE excluded=1"),
+        ("with_people", "SELECT COUNT(*) FROM proverbs WHERE excluded=0 AND people IS NOT NULL AND people!=''"),
+        ("with_claim", "SELECT COUNT(*) FROM proverbs WHERE excluded=0 AND claim IS NOT NULL AND claim!=''"),
+        ("clustered", "SELECT COUNT(*) FROM proverbs WHERE excluded=0 AND cluster_id IS NOT NULL"),
+        ("peoples", "SELECT COUNT(DISTINCT people) FROM proverbs WHERE excluded=0 AND people IS NOT NULL"),
+        ("must", "SELECT COUNT(*) FROM constraints WHERE label='must'"),
+        ("cannot", "SELECT COUNT(*) FROM constraints WHERE label='cannot'"),
+    ]:
+        cur.execute(q); out[key] = cur.fetchone()[0]
     con.close()
-    return {"proverbs": n_prov, "must": n_must, "cannot": n_cannot, "excluded": n_excl}
+    return out
+
 
 def leaderboard(top=50):
     con = connect(); cur = con.cursor()
     cur.execute("""SELECT user,
-                          SUM(CASE WHEN label='must' THEN 1 ELSE 0 END) as musts,
-                          SUM(CASE WHEN label='cannot' THEN 1 ELSE 0 END) as cannots,
-                          COUNT(*) as total
-                   FROM constraints GROUP BY user ORDER BY total DESC LIMIT ?""", (top,))
+                          SUM(CASE WHEN label='must' THEN 1 ELSE 0 END),
+                          SUM(CASE WHEN label='cannot' THEN 1 ELSE 0 END),
+                          COUNT(*)
+                   FROM constraints GROUP BY user ORDER BY 4 DESC LIMIT ?""", (top,))
     rows = cur.fetchall(); con.close()
-    return [{"user":r[0] or "(anon)", "must":r[1], "cannot":r[2], "total":r[3]} for r in rows]
+    return [{"user": r[0] or "(anon)", "must": r[1], "cannot": r[2], "total": r[3]} for r in rows]
+
 
 def export_annotations():
     con = connect(); cur = con.cursor()
     cur.execute("SELECT a_id,b_id,label,user,created_at FROM constraints")
-    cons = [{"a_id":r[0],"b_id":r[1],"label":r[2],"user":r[3],"created_at":r[4]} for r in cur.fetchall()]
+    cons = [{"a_id": r[0], "b_id": r[1], "label": r[2], "user": r[3], "created_at": r[4]} for r in cur.fetchall()]
     cur.execute("SELECT id FROM proverbs WHERE excluded=1")
     excl = [r[0] for r in cur.fetchall()]
     con.close()
-    import time as _t
-    return {"constraints": cons, "excluded_ids": excl, "meta": {"exported_at": _t.time()}}
+    return {"constraints": cons, "excluded_ids": excl, "meta": {"exported_at": time.time()}}
