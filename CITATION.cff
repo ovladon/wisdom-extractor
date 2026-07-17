@@ -1,0 +1,23 @@
+cff-version: 1.2.0
+title: "Wisdom Extractor"
+type: software
+authors:
+  - family-names: Belciug
+    given-names: Vlad
+  - family-names: Pelican
+    given-names: Elena
+    affiliation: "Ovidius University of Constanța"
+doi: 10.5281/zenodo.21413838
+repository-code: "https://github.com/ovladon/wisdom-extractor"
+license: MIT
+preferred-citation:
+  type: conference-paper
+  title: "The Wisdom Extractor: Mining Cross-Cultural Proverbs to Elicit Time-Tested Heuristics"
+  authors:
+    - family-names: Belciug
+      given-names: Vlad
+    - family-names: Pelican
+      given-names: Elena
+  conference:
+    name: "ConsILR-2025"
+  year: 2025

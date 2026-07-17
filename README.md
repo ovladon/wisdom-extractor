@@ -1,5 +1,7 @@
 # Wisdom Extractor — Unified (v19)
 
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.21413838.svg)](https://doi.org/10.5281/zenodo.21413838)
+
 One app that merges the two development lines of the Wisdom Extractor project:
 
 - the **ConsILR-2025 paper pipeline** (v7 → v10_working): canonicalization, char n-gram
@@ -52,3 +54,9 @@ per-version copies or zips by hand anymore. Instead:
 
 Browse any historical version with `git checkout v10` (return with `git checkout main`),
 or compare versions: `git diff v18 v19.2 --stat`.
+
+## Citing
+
+Software (always resolves to the latest version): DOI [10.5281/zenodo.21413838](https://doi.org/10.5281/zenodo.21413838).
+Method and results: Belciug, V. & Pelican, E. (2025). *The Wisdom Extractor: Mining
+Cross-Cultural Proverbs to Elicit Time-Tested Heuristics.* ConsILR-2025, Bucharest.
