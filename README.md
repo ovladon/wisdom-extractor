@@ -38,3 +38,17 @@ Pointing it at an existing v15–v18 `wisdom.db` upgrades the schema in place, n
 - `data/seed_proverbs.csv` — the paper's cleaned dataset (v10_working, 21,378 rows, `people` labels)
 - `data/people_metadata.csv` — per-people ecological/institutional proxies for correlations
 - `data/sources_catalog.json` — 46 curated proverb sources (Wikiquote, Wiktionary, Gutenberg, archives)
+
+## Versioning workflow
+
+This folder is a git repository whose history includes the project's full lineage
+(tags `v7.7`, `v10`, `v15`, `v16`, `v18`, `v19.2` — see `CHANGELOG.md`). Do not make
+per-version copies or zips by hand anymore. Instead:
+
+1. Make changes; describe them in `CHANGELOG.md`.
+2. Run `./scripts/release.sh <version> "one-line summary"` — commits, tags, and builds
+   `dist/wisdom-extractor-v<version>.zip`.
+3. `git push origin main --tags` (GitHub Releases can then serve the zips).
+
+Browse any historical version with `git checkout v10` (return with `git checkout main`),
+or compare versions: `git diff v18 v19.2 --stat`.
