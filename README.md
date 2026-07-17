@@ -44,7 +44,7 @@ Pointing it at an existing v15–v18 `wisdom.db` upgrades the schema in place, n
 ## Versioning workflow
 
 This folder is a git repository whose history includes the project's full lineage
-(tags `v7.7`, `v10`, `v15`, `v16`, `v18`, `v19.2` — see `CHANGELOG.md`). Do not make
+(tags `v7.7` through `v19.3` — see `CHANGELOG.md`). Do not make
 per-version copies or zips by hand anymore. Instead:
 
 1. Make changes; describe them in `CHANGELOG.md`.
