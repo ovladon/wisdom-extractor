@@ -4,6 +4,15 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.3 — 2026-07-17
+- **World map integrated into the app** (`core/mapview.py`, Results tab): motif view
+  (attestation points + arcs, per-culture proverb tooltips), shared-wisdom network
+  (120 strongest culture pairs), Europe zoom, and a **time slider** — "attested by
+  year N" — driven by the first_seen bounds, with undated attestations shown faded.
+  Fully self-contained HTML rendered via components.html; no external requests.
+- New data assets: `data/world_map_paths.svg` (compact public-domain world outline),
+  `data/people_coords.csv` (67 cultural centroids, extendable).
+
 ## v19.2 — 2026-07-17
 - **Attestation years / historical timeline.** `extract_attestation_year()` harvests
   "attested no later than" years from citation tails before stripping;

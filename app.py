@@ -33,6 +33,7 @@ from core.annotation_quality import (
     aggregate_constraints, constraint_pairs_for_clustering, pairs_needing_review,
 )
 from core.interpret import themed_report, ecological_correlations, productive_tensions
+from core.mapview import build_map_html
 from core.projection import compute_coords
 from scraper.basic_scraper import crawl_source
 
@@ -305,6 +306,13 @@ with tabs[4]:
                        "Years are upper bounds from cited sources, not origins; undated rows are omitted.")
         elif df["first_seen"].notna().sum() == 0:
             st.caption("No attestation years yet — run '🕰️ Backfill attestation years' in tab 2.")
+
+        st.subheader("🌍 World map — motifs, network, and time travel")
+        if st.button("Render world map"):
+            with st.spinner("Building map from database..."):
+                st.session_state["map_html"] = build_map_html(df)
+        if "map_html" in st.session_state:
+            st.components.v1.html(st.session_state["map_html"], height=820, scrolling=True)
 
         st.subheader("2D semantic map (top clusters)")
         n_map = st.slider("Clusters to map", 50, 1000, 300, 50)
