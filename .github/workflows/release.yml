@@ -1,0 +1,25 @@
+# Automatic GitHub Releases: pushing a tag like v19.3 creates the Release.
+# Notes come from .github/release-notes/<tag>.md if present, else auto-generated.
+name: release
+on:
+  push:
+    tags: ["v*"]
+permissions:
+  contents: write
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Create GitHub Release
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          NOTES=".github/release-notes/${GITHUB_REF_NAME}.md"
+          if gh release view "$GITHUB_REF_NAME" >/dev/null 2>&1; then
+            echo "Release $GITHUB_REF_NAME already exists; skipping."
+          elif [ -f "$NOTES" ]; then
+            gh release create "$GITHUB_REF_NAME" --title "Wisdom Extractor $GITHUB_REF_NAME" --notes-file "$NOTES"
+          else
+            gh release create "$GITHUB_REF_NAME" --title "Wisdom Extractor $GITHUB_REF_NAME" --generate-notes
+          fi
