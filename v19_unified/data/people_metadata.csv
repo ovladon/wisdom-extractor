@@ -1,0 +1,18 @@
+people,region,language_family,climate_zone,coastal,is_island,maritime_orientation,trade_route_proximity,migration_hub,subsistence_bias,staple_crop,legal_origin,urbanization_level,individualism_proxy,uncertainty_avoidance_proxy
+Romanian,Europe (SE),Indo-European · Romance,Temperate/Continental,Partial,N,Med,Mediterranean,Med,Agriculture,Wheat,CivilLaw,Med,Med,High
+Greek,Europe (SE),Indo-European · Hellenic,Mediterranean,Y,N,High,Mediterranean,Med,Fishing,Mixed,CivilLaw,Med,Med,High
+English,Europe (NW),Indo-European · Germanic,Temperate/Maritime,Y,N,High,Atlantic,High,Agriculture,Wheat,CommonLaw,High,High,Low
+Japanese,East Asia,Japonic,Humid Subtropical/Temperate,Y,Y,High,Pacific/SilkRoad,High,Agriculture,Rice,CivilLaw,High,Low,High
+Arabic,Middle East,Afro-Asiatic · Semitic,Arid/Steppe,Partial,N,Med,Levant,Med,Pastoralism,Mixed,CivilLaw,Med,Low,High
+Chinese,East Asia,Sino-Tibetan,Monsoon,Partial,N,Med,SilkRoad,High,Agriculture,Rice,CivilLaw,High,Low,High
+Spanish,Europe (SW),Indo-European · Romance,Mediterranean,Y,N,High,Atlantic/Mediterranean,Med,Agriculture,Wheat,CivilLaw,High,Med,High
+French,Europe (W),Indo-European · Romance,Temperate,Partial,N,Med,Atlantic,Med,Agriculture,Wheat,CivilLaw,High,Med,Med
+German,Europe (Central),Indo-European · Germanic,Temperate,Partial,N,Med,InlandCaravan,Med,Agriculture,Wheat,CivilLaw,High,High,Low
+Turkish,Anatolia,Turkic,Steppe/Mediterranean,Partial,N,Med,Mediterranean/SilkRoad,Med,Agriculture,Mixed,CivilLaw,Med,Low,High
+Italian,Europe (S),Indo-European · Romance,Mediterranean,Y,N,High,Mediterranean,Med,Agriculture,Wheat,CivilLaw,High,Med,High
+Dutch,Europe (NW),Indo-European · Germanic,Temperate/Maritime,Y,N,High,Atlantic,High,Agriculture,Wheat,CivilLaw,High,High,Low
+Russian,Eurasia (N/E),Indo-European · Slavic,Cold Continental,Partial,N,Low,InlandCaravan,Med,Agriculture,Mixed,CivilLaw,Med,Low,High
+Portuguese,Europe (SW),Indo-European · Romance,Atlantic Maritime,Y,N,High,Atlantic,Med,Agriculture,Wheat,CivilLaw,High,Med,Med
+Yoruba,West Africa,Niger-Congo · Volta-Niger,Tropical,Partial,N,Med,Atlantic,Med,Agriculture,Maize,Customary,Med,Med,Med
+Hindi,South Asia,Indo-European · Indo-Aryan,Monsoon,Partial,N,Low,SilkRoad,Med,Agriculture,Wheat,RBI/Civil,High,Low,High
+Swahili,East Africa,Niger-Congo · Bantu,Tropical-Maritime,Y,N,High,IndianOcean,High,Fishing/Agriculture,Maize,Customary,Med,Med,Med

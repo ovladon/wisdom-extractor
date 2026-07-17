@@ -1,0 +1,1255 @@
+{
+  "generated_at": "2025-10-01",
+  "version": "2025-10-01",
+  "note": "Curated, largely open-licensed sources for proverbs/sayings. Prefer Wikimedia, Gutenberg, university archives. Respect robots.txt and site TOS.",
+  "schema": {
+    "fields": [
+      "id",
+      "name",
+      "url",
+      "domain",
+      "languages",
+      "country_or_region",
+      "type",
+      "tags",
+      "license",
+      "license_note",
+      "method",
+      "selectors",
+      "pagination",
+      "depth",
+      "rate_limit_hz",
+      "notes"
+    ],
+    "method_values": [
+      "mediawiki",
+      "html_list",
+      "html_table",
+      "gutenberg_text",
+      "archive_text",
+      "api",
+      "sitemap_follow"
+    ],
+    "depth_meaning": "max crawl depth from root url for discovery"
+  },
+  "sources": [
+    {
+      "id": "03be22ea13",
+      "name": "Wikiquote – Category:Proverbs by language",
+      "url": "https://en.wikiquote.org/wiki/Category:Proverbs_by_language",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "multi"
+      ],
+      "country_or_region": "global",
+      "type": "directory",
+      "tags": [
+        "encyclopedic",
+        "multilingual",
+        "seed"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li a",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 1,
+      "rate_limit_hz": 0.5,
+      "notes": "Follow to specific language proverb pages and extract list items."
+    },
+    {
+      "id": "fc8a0904ff",
+      "name": "Wiktionary – Category:Latin proverbs",
+      "url": "https://en.wiktionary.org/wiki/Category:Latin_proverbs",
+      "domain": "en.wiktionary.org",
+      "languages": [
+        "la",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "lexicon",
+        "morphology",
+        "forms"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "1ecb773936",
+      "name": "Wikiquote – Arabic proverbs",
+      "url": "https://en.wikiquote.org/wiki/Arabic_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "ar",
+        "en"
+      ],
+      "country_or_region": "MENA",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "74320eae6e",
+      "name": "Wikiquote – Chinese proverbs",
+      "url": "https://en.wikiquote.org/wiki/Chinese_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "zh",
+        "en"
+      ],
+      "country_or_region": "China",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "45cf327289",
+      "name": "Wikiquote – Persian proverbs",
+      "url": "https://en.wikiquote.org/wiki/Persian_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "fa",
+        "en"
+      ],
+      "country_or_region": "Iran",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "3b21348348",
+      "name": "Wikiquote – Japanese proverbs",
+      "url": "https://en.wikiquote.org/wiki/Japanese_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "ja",
+        "en"
+      ],
+      "country_or_region": "Japan",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "aaa5d5ee3c",
+      "name": "Wikiquote – Basque proverbs",
+      "url": "https://en.wikiquote.org/wiki/Basque_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "eu",
+        "en"
+      ],
+      "country_or_region": "Basque Country",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "c8dd7f3acd",
+      "name": "Wikiquote – Tamil proverbs",
+      "url": "https://en.wikiquote.org/wiki/Tamil_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "ta",
+        "en"
+      ],
+      "country_or_region": "India/Sri Lanka",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "b3c31f3d15",
+      "name": "Wikiquote – Romanian proverbs",
+      "url": "https://en.wikiquote.org/wiki/Romanian_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "ro",
+        "en"
+      ],
+      "country_or_region": "Romania/Moldova",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "2bc3cad3f9",
+      "name": "Wikiquote – Polish proverbs",
+      "url": "https://en.wikiquote.org/wiki/Polish_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "pl",
+        "en"
+      ],
+      "country_or_region": "Poland",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "9d12f6951e",
+      "name": "Wiktionary – Category:Estonian proverbs",
+      "url": "https://en.wiktionary.org/wiki/Category:Estonian_proverbs",
+      "domain": "en.wiktionary.org",
+      "languages": [
+        "et",
+        "en"
+      ],
+      "country_or_region": "Estonia",
+      "type": "list",
+      "tags": [
+        "lexicon"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "79fa654f4a",
+      "name": "Wikiquote – Estonian proverbs",
+      "url": "https://en.wikiquote.org/wiki/Estonian_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "et",
+        "en"
+      ],
+      "country_or_region": "Estonia",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "7cf624952b",
+      "name": "Gutenberg – A Polyglot of Foreign Proverbs (Bohn, 1857)",
+      "url": "https://www.gutenberg.org/files/51090/51090-h/51090-h.htm",
+      "domain": "www.gutenberg.org",
+      "languages": [
+        "multi",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "book",
+      "tags": [
+        "public_domain",
+        "historical"
+      ],
+      "license": "Public Domain (Project Gutenberg)",
+      "license_note": "Public domain eBooks; parse structured text/HTML.",
+      "method": "gutenberg_text",
+      "selectors": {
+        "item": "p",
+        "container": "body"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": "Contains French, Italian, German, Dutch, Spanish, Portuguese, Danish with English translations."
+    },
+    {
+      "id": "c7f6a468eb",
+      "name": "Gutenberg – Proverbs of All Nations (Kelly, 1867)",
+      "url": "https://www.gutenberg.org/files/63190/63190-h/63190-h.htm",
+      "domain": "www.gutenberg.org",
+      "languages": [
+        "multi",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "book",
+      "tags": [
+        "public_domain",
+        "historical"
+      ],
+      "license": "Public Domain (Project Gutenberg)",
+      "license_note": "Public domain eBooks; parse structured text/HTML.",
+      "method": "gutenberg_text",
+      "selectors": {
+        "item": "p",
+        "container": "body"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "1263a738e4",
+      "name": "Gutenberg – Bible KJV Book of Proverbs",
+      "url": "https://www.gutenberg.org/ebooks/8020",
+      "domain": "www.gutenberg.org",
+      "languages": [
+        "he",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "book",
+      "tags": [
+        "religious",
+        "public_domain"
+      ],
+      "license": "Public Domain (Project Gutenberg)",
+      "license_note": "Public domain eBooks; parse structured text/HTML.",
+      "method": "gutenberg_text",
+      "selectors": {
+        "item": "p",
+        "container": "body"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": "Wisdom literature; not folk proverbs but canonical aphorisms."
+    },
+    {
+      "id": "10763657a9",
+      "name": "Internet Archive – Wander: Deutsches Sprichwörter-Lexikon (5 vols)",
+      "url": "https://archive.org/details/deutschessprichw0000wand",
+      "domain": "archive.org",
+      "languages": [
+        "de"
+      ],
+      "country_or_region": "Germany",
+      "type": "book",
+      "tags": [
+        "public_domain",
+        "historical",
+        "massive"
+      ],
+      "license": "Public Domain (source text)",
+      "license_note": "IA scans; verify each volume’s rights; prefer BSB or Zeno HTML if allowed.",
+      "method": "archive_text",
+      "selectors": {
+        "item": "p",
+        "container": "body"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": "Classic German proverb lexicon; rich cross-refs."
+    },
+    {
+      "id": "a04a76ee5b",
+      "name": "Zeno – Wander Deutsches Sprichwörter-Lexikon (HTML)",
+      "url": "https://www.zeno.org/wander-1867",
+      "domain": "www.zeno.org",
+      "languages": [
+        "de"
+      ],
+      "country_or_region": "Germany",
+      "type": "book",
+      "tags": [
+        "public_domain_text",
+        "HTML"
+      ],
+      "license": "Public Domain (text); Zeno terms apply",
+      "license_note": "Check Zeno.org terms for scraping; throttle requests and attribute.",
+      "method": "html_list",
+      "selectors": {
+        "item": "p",
+        "container": "body"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.2,
+      "notes": ""
+    },
+    {
+      "id": "fd85fc4e43",
+      "name": "Bavarian State Library – Wander vol.1 (digital scan)",
+      "url": "https://www.digitale-sammlungen.de/de/view/bsb10522900",
+      "domain": "www.digitale-sammlungen.de",
+      "languages": [
+        "de"
+      ],
+      "country_or_region": "Germany",
+      "type": "book",
+      "tags": [
+        "public_domain",
+        "library"
+      ],
+      "license": "Public Domain (scan)",
+      "license_note": "BSB scan viewer; site ToS govern reuse; prefer API/IIIF where possible.",
+      "method": "archive_text",
+      "selectors": {
+        "item": "p",
+        "container": "body"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.2,
+      "notes": ""
+    },
+    {
+      "id": "44352ca576",
+      "name": "African Proverbs – Tangaza University College (AfriProv)",
+      "url": "https://afriprov.tangaza.ac.ke/welcome/",
+      "domain": "afriprov.tangaza.ac.ke",
+      "languages": [
+        "multi",
+        "en"
+      ],
+      "country_or_region": "Africa",
+      "type": "portal",
+      "tags": [
+        "academic",
+        "curated",
+        "multilingual"
+      ],
+      "license": "Mixed; site content © owners",
+      "license_note": "Respect site ToS; attribute; avoid heavy scraping.",
+      "method": "html_list",
+      "selectors": {
+        "item": "li, p",
+        "container": "article, .entry-content"
+      },
+      "pagination": {},
+      "depth": 1,
+      "rate_limit_hz": 0.5,
+      "notes": "Includes many country/language subcollections & PDFs."
+    },
+    {
+      "id": "845f351b62",
+      "name": "Swahili Proverbs – University of Illinois (AFRST)",
+      "url": "https://swahiliproverbs.afrst.illinois.edu/association.html",
+      "domain": "swahiliproverbs.afrst.illinois.edu",
+      "languages": [
+        "sw",
+        "en"
+      ],
+      "country_or_region": "East Africa",
+      "type": "database",
+      "tags": [
+        "academic",
+        "curated"
+      ],
+      "license": "Educational use",
+      "license_note": "Check site license/terms; attribute content.",
+      "method": "html_table",
+      "selectors": {
+        "item": "li, tr",
+        "container": "#content, body"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": "Large Swahili proverb listings with glosses."
+    },
+    {
+      "id": "cae63441a2",
+      "name": "Hausa Proverbs – Merrick (1905) – Internet Archive",
+      "url": "https://archive.org/details/hausaproverbs00merrrich",
+      "domain": "archive.org",
+      "languages": [
+        "ha",
+        "en"
+      ],
+      "country_or_region": "Nigeria/Niger",
+      "type": "book",
+      "tags": [
+        "public_domain",
+        "historical"
+      ],
+      "license": "Public Domain (likely)",
+      "license_note": "IA scan; confirm rights per item page.",
+      "method": "archive_text",
+      "selectors": {
+        "item": "p",
+        "container": "#bookreader"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": "Classic Hausa proverb collection."
+    },
+    {
+      "id": "55b6427306",
+      "name": "Boston University – African Proverbs Project (videos)",
+      "url": "https://www.bu.edu/africa/forstudents/alp/lang-teaching-resources/african-proverbs-project/",
+      "domain": "www.bu.edu",
+      "languages": [
+        "multi",
+        "en"
+      ],
+      "country_or_region": "Africa",
+      "type": "portal",
+      "tags": [
+        "academic",
+        "multimedia"
+      ],
+      "license": "Educational use",
+      "license_note": "Site ToS govern reuse.",
+      "method": "html_list",
+      "selectors": {
+        "item": "a, li",
+        "container": "main"
+      },
+      "pagination": {},
+      "depth": 1,
+      "rate_limit_hz": 0.5,
+      "notes": "Proverbs with dramatized skits; metadata can be extracted."
+    },
+    {
+      "id": "44f498bd6e",
+      "name": "Yoruba Proverbs – University of Nebraska-Lincoln",
+      "url": "https://yoruba.unl.edu/yoruba.php-text%3D1b%26view%3D0%26uni%3D1%26l%3D1.htm",
+      "domain": "yoruba.unl.edu",
+      "languages": [
+        "yo",
+        "en"
+      ],
+      "country_or_region": "Nigeria",
+      "type": "collection",
+      "tags": [
+        "academic",
+        "curated"
+      ],
+      "license": "Educational use",
+      "license_note": "Site terms; attribute content.",
+      "method": "html_list",
+      "selectors": {
+        "item": "p, li",
+        "container": "body"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": "Yoruba texts with translations; multiple thematic pages."
+    },
+    {
+      "id": "f1788bb7a6",
+      "name": "Dúchas – National Folklore Collection (Ireland)",
+      "url": "https://www.duchas.ie/",
+      "domain": "www.duchas.ie",
+      "languages": [
+        "ga",
+        "en"
+      ],
+      "country_or_region": "Ireland",
+      "type": "archive",
+      "tags": [
+        "folklore",
+        "records",
+        "search"
+      ],
+      "license": "Various per-item rights",
+      "license_note": "Use search/API; avoid bulk scraping; cite item IDs.",
+      "method": "api",
+      "selectors": {
+        "item": "",
+        "container": ""
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": "Query terms: 'seanfhocal' (proverb), 'proverb'."
+    },
+    {
+      "id": "8257c0f236",
+      "name": "Te Aka Māori Dictionary – Whakataukī",
+      "url": "https://maoridictionary.co.nz/word/9903",
+      "domain": "maoridictionary.co.nz",
+      "languages": [
+        "mi",
+        "en"
+      ],
+      "country_or_region": "New Zealand",
+      "type": "dictionary",
+      "tags": [
+        "lexicon",
+        "whakataukī"
+      ],
+      "license": "Site ©",
+      "license_note": "Educational fair use for short excerpts with attribution.",
+      "method": "html_list",
+      "selectors": {
+        "item": "li, p",
+        "container": "main"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "5c2dd7d863",
+      "name": "CVC – Refranero multilingüe (Centro Virtual Cervantes)",
+      "url": "https://cvc.cervantes.es/lengua/refranero/",
+      "domain": "cvc.cervantes.es",
+      "languages": [
+        "es",
+        "multi"
+      ],
+      "country_or_region": "Spain",
+      "type": "database",
+      "tags": [
+        "authoritative",
+        "multilingual",
+        "metadata"
+      ],
+      "license": "© Instituto Cervantes",
+      "license_note": "Consult reuse terms; avoid bulk; attribute.",
+      "method": "html_table",
+      "selectors": {
+        "item": "li, tr",
+        "container": "#principal, #contenedor"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.2,
+      "notes": ""
+    },
+    {
+      "id": "05d076f96b",
+      "name": "Buber’s Basque Page – Esaera Zaharrak",
+      "url": "https://www.buber.net/Basque/Euskara/proverb.php",
+      "domain": "www.buber.net",
+      "languages": [
+        "eu",
+        "en"
+      ],
+      "country_or_region": "Basque Country",
+      "type": "list",
+      "tags": [
+        "community",
+        "curated"
+      ],
+      "license": "© Buber.net",
+      "license_note": "Attribution required; small-volume extraction preferred.",
+      "method": "html_list",
+      "selectors": {
+        "item": "li",
+        "container": "body"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "002658f7eb",
+      "name": "Omniglot – Estonian proverbs",
+      "url": "https://www.omniglot.com/language/proverbs/estonian.htm",
+      "domain": "www.omniglot.com",
+      "languages": [
+        "et",
+        "en"
+      ],
+      "country_or_region": "Estonia",
+      "type": "list",
+      "tags": [
+        "reference",
+        "multilingual"
+      ],
+      "license": "© Omniglot",
+      "license_note": "Attribution required; avoid heavy scraping.",
+      "method": "html_list",
+      "selectors": {
+        "item": "li",
+        "container": "#content"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "3f0b457777",
+      "name": "Wikipedia – List of Tamil proverbs",
+      "url": "https://en.wikipedia.org/wiki/List_of_Tamil_proverbs",
+      "domain": "en.wikipedia.org",
+      "languages": [
+        "ta",
+        "en"
+      ],
+      "country_or_region": "India/Sri Lanka",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "aa21dd3fda",
+      "name": "Wikipedia – Japanese proverbs (overview)",
+      "url": "https://en.wikipedia.org/wiki/Japanese_proverbs",
+      "domain": "en.wikipedia.org",
+      "languages": [
+        "ja",
+        "en"
+      ],
+      "country_or_region": "Japan",
+      "type": "article",
+      "tags": [
+        "encyclopedic",
+        "overview"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "9a0711cd39",
+      "name": "Wikipedia – Chinese proverbs (overview)",
+      "url": "https://en.wikipedia.org/wiki/Chinese_proverbs",
+      "domain": "en.wikipedia.org",
+      "languages": [
+        "zh",
+        "en"
+      ],
+      "country_or_region": "China",
+      "type": "article",
+      "tags": [
+        "encyclopedic",
+        "overview"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "5d43b3059d",
+      "name": "Wikiquote – TR proverbs",
+      "url": "https://en.wikiquote.org/wiki/Turkish_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "tr",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "c64376f5aa",
+      "name": "Wikiquote – GA proverbs",
+      "url": "https://en.wikiquote.org/wiki/Irish_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "ga",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "740090f68c",
+      "name": "Wikiquote – MI proverbs",
+      "url": "https://en.wikiquote.org/wiki/Māori_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "mi",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "8114b65ab0",
+      "name": "Wikiquote – RU proverbs",
+      "url": "https://en.wikiquote.org/wiki/Russian_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "ru",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "ccfae6ba53",
+      "name": "Wikiquote – UK proverbs",
+      "url": "https://en.wikiquote.org/wiki/Ukrainian_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "uk",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "c2cdb9e788",
+      "name": "Wikiquote – DE proverbs",
+      "url": "https://en.wikiquote.org/wiki/German_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "de",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "318bfdfe0a",
+      "name": "Wikiquote – FR proverbs",
+      "url": "https://en.wikiquote.org/wiki/French_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "fr",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "04448eb178",
+      "name": "Wikiquote – ES proverbs",
+      "url": "https://en.wikiquote.org/wiki/Spanish_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "es",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "1245e98435",
+      "name": "Wikiquote – IT proverbs",
+      "url": "https://en.wikiquote.org/wiki/Italian_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "it",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "e8cfc66135",
+      "name": "Wikiquote – PT proverbs",
+      "url": "https://en.wikiquote.org/wiki/Portuguese_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "pt",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "a6ae5e9d2c",
+      "name": "Wikiquote – BN proverbs",
+      "url": "https://en.wikiquote.org/wiki/Bengali_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "bn",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "e076dc8b16",
+      "name": "Wikiquote – HI proverbs",
+      "url": "https://en.wikiquote.org/wiki/Hindi_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "hi",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "9941a805be",
+      "name": "Wikiquote – UR proverbs",
+      "url": "https://en.wikiquote.org/wiki/Urdu_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "ur",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "b7d6e9b62e",
+      "name": "Wikiquote – VI proverbs",
+      "url": "https://en.wikiquote.org/wiki/Vietnamese_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "vi",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    },
+    {
+      "id": "86dea2dc8c",
+      "name": "Wikiquote – ID proverbs",
+      "url": "https://en.wikiquote.org/wiki/Indonesian_proverbs",
+      "domain": "en.wikiquote.org",
+      "languages": [
+        "id",
+        "en"
+      ],
+      "country_or_region": "global",
+      "type": "list",
+      "tags": [
+        "encyclopedic"
+      ],
+      "license": "CC BY-SA 4.0",
+      "license_note": "Wikimedia projects (Wikiquote/Wikipedia/Wiktionary). Keep attribution & share-alike.",
+      "method": "mediawiki",
+      "selectors": {
+        "item": "li",
+        "container": "#mw-content-text"
+      },
+      "pagination": {},
+      "depth": 0,
+      "rate_limit_hz": 0.5,
+      "notes": ""
+    }
+  ]
+}
