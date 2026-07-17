@@ -4,6 +4,18 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.4 — 2026-07-18
+- **Annotator portal** (`annotator_app.py`): a slim, safe entry point for annotators —
+  pair-judgment game (uncertain / disputed / random strategies), live leaderboard,
+  personal consistency score, world map. No admin tabs, no destructive actions,
+  optional `ANNOTATOR_CODE` access gate. Deploy this for annotators; `app.py` stays
+  the full lab bench on the same database.
+- **Deployment kit** (`Dockerfile`, `deploy/`): docker-compose with automatic HTTPS
+  (Caddy), persistent volume for the database, and `deploy/DEPLOY.md` comparing VPS /
+  Hugging Face Spaces / Streamlit Cloud hosting (Netlify cannot run Streamlit).
+- One-click Windows launcher (`run_windows.bat`) + annotator guide (`WINDOWS.md`)
+  for the install-locally fallback.
+
 ## v19.3 — 2026-07-17
 - **World map integrated into the app** (`core/mapview.py`, Results tab): motif view
   (attestation points + arcs, per-culture proverb tooltips), shared-wisdom network

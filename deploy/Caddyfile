@@ -1,0 +1,5 @@
+# Replace with your (sub)domain, pointed at the server's IP via a DNS A record.
+# Caddy obtains and renews the HTTPS certificate automatically.
+wisdom.example.com {
+    reverse_proxy wisdom:8501
+}

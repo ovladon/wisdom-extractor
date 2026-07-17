@@ -1,0 +1,25 @@
+# One-command hosting: annotator portal behind automatic HTTPS.
+#   1. put your domain in Caddyfile (or use the IP without caddy)
+#   2. docker compose up -d
+services:
+  wisdom:
+    build: ..
+    restart: unless-stopped
+    environment:
+      - WISDOM_DB_PATH=/data/wisdom.db
+      - APP_FILE=annotator_app.py      # switch to app.py for the full admin app
+      - ANNOTATOR_CODE=${ANNOTATOR_CODE:-}   # optional access code, set in .env
+    volumes:
+      - wisdom_data:/data
+    expose:
+      - "8501"
+  caddy:
+    image: caddy:2
+    restart: unless-stopped
+    ports: ["80:80", "443:443"]
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile
+      - caddy_data:/data
+volumes:
+  wisdom_data:
+  caddy_data:
