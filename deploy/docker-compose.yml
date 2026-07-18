@@ -1,18 +1,26 @@
-# One-command hosting: annotator portal behind automatic HTTPS.
-#   1. put your domain in Caddyfile (or use the IP without caddy)
-#   2. docker compose up -d
+# One-command hosting: annotator portal + mobile swipe app behind automatic HTTPS.
+#   1. put your domains in Caddyfile   2. docker compose up -d
 services:
-  wisdom:
+  wisdom:                      # Streamlit annotator portal (desktop browsers)
     build: ..
     restart: unless-stopped
     environment:
       - WISDOM_DB_PATH=/data/wisdom.db
       - APP_FILE=annotator_app.py      # switch to app.py for the full admin app
-      - ANNOTATOR_CODE=${ANNOTATOR_CODE:-}   # optional access code, set in .env
+      - ANNOTATOR_CODE=${ANNOTATOR_CODE:-}
     volumes:
       - wisdom_data:/data
-    expose:
-      - "8501"
+    expose: ["8501"]
+  mobile:                      # phone-first swipe app (PWA), same database
+    build: ..
+    restart: unless-stopped
+    command: uvicorn mobile.mobile_api:app --host 0.0.0.0 --port 8600
+    environment:
+      - WISDOM_DB_PATH=/data/wisdom.db
+      - ANNOTATOR_CODE=${ANNOTATOR_CODE:-}
+    volumes:
+      - wisdom_data:/data
+    expose: ["8600"]
   caddy:
     image: caddy:2
     restart: unless-stopped

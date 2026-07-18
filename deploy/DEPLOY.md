@@ -43,3 +43,12 @@ wrong for collecting real data.
   and/or DNS for the subdomain. Not the app itself.
 - **Buttondown**: the annotator community newsletter — recruitment, weekly
   "top contributor + newly settled motifs" digests, study updates.
+
+## The mobile app (v19.5)
+
+`mobile/` is a phone-first swipe interface (PWA): judge pairs with a swipe
+(right = same idea, left = different), streaks, leaderboard, consistency score.
+It shares the same database and access code as the portal. The compose file serves it
+as a second subdomain (see Caddyfile) — that's the URL to share for
+"annotate whenever you have a minute". On a phone, "Add to Home Screen" installs it
+like an app. Local test: `uvicorn mobile.mobile_api:app --port 8600`.

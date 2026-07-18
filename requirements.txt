@@ -6,4 +6,6 @@ scipy>=1.9
 requests>=2.28
 beautifulsoup4>=4.11
 lxml>=4.9
+fastapi>=0.100
+uvicorn>=0.23
 # optional: umap-learn for nicer 2D maps (PCA fallback works without it)

@@ -1,0 +1,222 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="theme-color" content="#171613">
+<link rel="manifest" href="/manifest.json">
+<title>Wisdom Lab</title>
+<style>
+:root{
+  --bg:#f7f6f2; --card:#fdfdfb; --ink:#171613; --ink2:#5a5850; --ink3:#8a877c;
+  --line:#dedbd2; --same:#1baf7a; --diff:#e34948; --accent:#2a78d6;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#141412; --card:#1e1e1b; --ink:#f2f1ea; --ink2:#b9b7ab; --ink3:#7f7d72;
+  --line:#33322c; --same:#199e70; --diff:#e66767; --accent:#3987e5;}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:16px/1.45 -apple-system,"Segoe UI",Roboto,"Noto Sans",sans-serif;
+  display:flex;flex-direction:column;
+  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+header{display:flex;align-items:center;justify-content:space-between;padding:12px 16px 4px}
+header h1{font-size:17px;margin:0;font-weight:650}
+#streak{font-size:14px;color:var(--ink2);font-variant-numeric:tabular-nums}
+main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:8px 14px;max-width:520px;width:100%;margin:0 auto}
+.question{text-align:center;color:var(--ink2);font-size:14px;margin:6px 0 10px}
+#cardwrap{position:relative;touch-action:pan-y}
+#card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+  padding:18px 18px 14px;box-shadow:0 6px 22px rgba(0,0,0,.10);
+  transition:transform .18s ease,opacity .18s ease;will-change:transform}
+@media (prefers-reduced-motion:reduce){#card{transition:none}}
+.saying{margin:0 0 4px;font-size:17.5px;font-weight:500;text-wrap:balance}
+.who{color:var(--ink3);font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+.divider{border-top:1px dashed var(--line);margin:12px 0}
+.hint{position:absolute;top:14px;font-size:15px;font-weight:700;padding:5px 11px;border-radius:8px;
+  opacity:0;transition:opacity .1s;color:#fff;pointer-events:none}
+#hintSame{right:12px;background:var(--same)}
+#hintDiff{left:12px;background:var(--diff)}
+.actions{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:16px}
+button{font:inherit;border:0;border-radius:12px;padding:15px 8px;font-weight:650;cursor:pointer;color:#fff}
+#bDiff{background:var(--diff)} #bSame{background:var(--same)}
+.actions2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
+.actions2 button{background:transparent;color:var(--ink3);border:1px solid var(--line);font-weight:500;font-size:13px;padding:10px 4px}
+.swipetip{text-align:center;color:var(--ink3);font-size:12px;margin-top:10px}
+footer{padding:6px 16px 12px;display:flex;justify-content:space-between;color:var(--ink3);font-size:12.5px}
+footer a{color:var(--accent);text-decoration:none}
+/* setup + board panels */
+.panel{max-width:420px;margin:0 auto;padding:24px 18px;width:100%}
+.panel h2{font-size:20px;margin:0 0 4px}
+.panel p{color:var(--ink2);font-size:14px}
+.panel input{width:100%;font:inherit;padding:12px;border-radius:10px;border:1px solid var(--line);
+  background:var(--card);color:var(--ink);margin:6px 0 12px}
+.panel button{width:100%;background:var(--accent)}
+table{width:100%;border-collapse:collapse;font-size:14px;font-variant-numeric:tabular-nums}
+td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
+.me{font-weight:700}
+.stat{display:flex;gap:18px;margin:10px 0 16px}
+.stat div b{display:block;font-size:22px}
+.stat div span{color:var(--ink3);font-size:12px}
+.hidden{display:none}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom));
+  background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none}
+</style>
+</head>
+<body>
+
+<div id="setup" class="panel">
+  <h2>🧭 Wisdom Lab</h2>
+  <p>Help map humanity's proverbs: judge whether two sayings express the same idea.
+     Thirty seconds or thirty minutes — every judgment counts.</p>
+  <input id="inName" placeholder="Your name or nickname" maxlength="40" autocomplete="nickname">
+  <input id="inCode" placeholder="Access code (if you were given one)" autocomplete="off">
+  <button onclick="start()">Start judging</button>
+</div>
+
+<div id="game" class="hidden" style="display:flex;flex-direction:column;flex:1">
+<header>
+  <h1>🧭 Wisdom Lab</h1>
+  <div id="streak">—</div>
+</header>
+<main>
+  <div class="question">Do these two sayings express the <b>same underlying idea</b>?</div>
+  <div id="cardwrap">
+    <div id="card">
+      <span class="hint" id="hintSame">SAME ✓</span>
+      <span class="hint" id="hintDiff">DIFFERENT ✗</span>
+      <p class="saying" id="textA">…</p>
+      <div class="who" id="whoA"></div>
+      <div class="divider"></div>
+      <p class="saying" id="textB">…</p>
+      <div class="who" id="whoB"></div>
+    </div>
+  </div>
+  <div class="actions">
+    <button id="bDiff" onclick="judge('cannot')">✗ Different</button>
+    <button id="bSame" onclick="judge('must')">✓ Same idea</button>
+  </div>
+  <div class="actions2">
+    <button onclick="nextPair()">Skip</button>
+    <button onclick="judge('exclude_a')">A isn't a saying</button>
+    <button onclick="judge('exclude_b')">B isn't a saying</button>
+  </div>
+  <div class="swipetip">…or swipe the card: right = same, left = different</div>
+</main>
+<footer>
+  <a href="#" onclick="showBoard();return false">🏆 My stats & leaderboard</a>
+  <span id="corpusline"></span>
+</footer>
+</div>
+
+<div id="board" class="panel hidden">
+  <h2>🏆 Your standing</h2>
+  <div class="stat">
+    <div><b id="stTotal">0</b><span>judgments</span></div>
+    <div><b id="stRank">—</b><span>rank</span></div>
+    <div><b id="stRel">—</b><span>consistency</span></div>
+  </div>
+  <table id="lb"><tr><th>#</th><th>annotator</th><th>total</th></tr></table>
+  <p style="margin-top:14px"><button onclick="showGame()">← Back to judging</button></p>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+let user=localStorage.getItem("wl_name")||"", code=localStorage.getItem("wl_code")||"";
+let pair=null, streak=0, session=0, strategy="uncertain";
+const $=id=>document.getElementById(id);
+
+function toast(msg){const t=$("toast");t.textContent=msg;t.style.opacity=1;
+  setTimeout(()=>t.style.opacity=0,1400);}
+function buzz(ms){if(navigator.vibrate)navigator.vibrate(ms);}
+
+async function api(path,opts){
+  const r=await fetch(path,opts);
+  if(r.status===401){localStorage.removeItem("wl_code");location.reload();return null;}
+  if(!r.ok){toast("Connection hiccup — retrying…");return null;}
+  return r.json();
+}
+
+async function nextPair(){
+  // alternate strategies to keep it fresh: mostly uncertain, sometimes disputed
+  strategy=(session%7===6)?"disputed":"uncertain";
+  const d=await api(`/api/pair?strategy=${strategy}&code=${encodeURIComponent(code)}`);
+  if(!d)return;
+  pair=d;
+  $("textA").textContent=d.a.text; $("whoA").textContent=d.a.people;
+  $("textB").textContent=d.b.text; $("whoB").textContent=d.b.people;
+  const c=$("card");c.style.transform="";c.style.opacity=1;
+}
+
+async function judge(label){
+  if(!pair)return;
+  const body={a_id:pair.a.id,b_id:pair.b.id,label,user,code};
+  api("/api/judge",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  if(label==="must"||label==="cannot"){
+    session++;streak++;buzz(12);
+    $("streak").textContent=`✦ ${session} this session`;
+    if(session%10===0)toast(`${session} judgments — you're on fire 🔥`);
+  } else { toast("Marked. Thank you!"); }
+  animateOut(label==="must"?1:(label==="cannot"?-1:0));
+  setTimeout(nextPair,140);
+}
+
+function animateOut(dir){
+  const c=$("card");
+  c.style.transform=dir? `translateX(${dir*120}%) rotate(${dir*8}deg)`:"scale(.96)";
+  c.style.opacity=0;
+}
+
+/* swipe */
+let sx=null,dx=0;
+const wrap=$("cardwrap");
+wrap.addEventListener("touchstart",e=>{sx=e.touches[0].clientX;dx=0;},{passive:true});
+wrap.addEventListener("touchmove",e=>{
+  if(sx===null)return;
+  dx=e.touches[0].clientX-sx;
+  $("card").style.transform=`translateX(${dx}px) rotate(${dx/28}deg)`;
+  $("hintSame").style.opacity=dx>40?Math.min(1,(dx-40)/60):0;
+  $("hintDiff").style.opacity=dx<-40?Math.min(1,(-dx-40)/60):0;
+},{passive:true});
+wrap.addEventListener("touchend",()=>{
+  $("hintSame").style.opacity=0;$("hintDiff").style.opacity=0;
+  if(dx>90)judge("must");
+  else if(dx<-90)judge("cannot");
+  else $("card").style.transform="";
+  sx=null;dx=0;
+});
+
+async function showBoard(){
+  const d=await api(`/api/me?user=${encodeURIComponent(user)}&code=${encodeURIComponent(code)}`);
+  if(!d)return;
+  $("stTotal").textContent=d.total;
+  $("stRank").textContent=d.rank?("#"+d.rank):"—";
+  $("stRel").textContent=d.reliability!=null?d.reliability.toFixed(2):"—";
+  const t=$("lb");t.innerHTML="<tr><th>#</th><th>annotator</th><th>total</th></tr>";
+  d.leaderboard.forEach((r,i)=>{
+    const tr=document.createElement("tr");
+    if(r.user===user)tr.className="me";
+    tr.innerHTML=`<td>${i+1}</td><td>${r.user}</td><td>${r.total}</td>`;
+    t.appendChild(tr);
+  });
+  $("game").classList.add("hidden");$("board").classList.remove("hidden");
+}
+function showGame(){$("board").classList.add("hidden");$("game").classList.remove("hidden");}
+
+async function start(){
+  user=$("inName").value.trim();code=$("inCode").value.trim();
+  if(!user){toast("Please enter a name");return;}
+  localStorage.setItem("wl_name",user);localStorage.setItem("wl_code",code);
+  boot();
+}
+async function boot(){
+  $("setup").classList.add("hidden");$("game").classList.remove("hidden");
+  const d=await api(`/api/me?user=${encodeURIComponent(user)}&code=${encodeURIComponent(code)}`);
+  if(d)$("corpusline").textContent=`${d.corpus.proverbs.toLocaleString()} sayings · ${d.corpus.peoples} peoples`;
+  nextPair();
+}
+if(user){$("inName").value=user;$("inCode").value=code;boot();}
+</script>
+</body>
+</html>

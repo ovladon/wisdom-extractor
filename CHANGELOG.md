@@ -4,6 +4,17 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.5 — 2026-07-18
+- **Mobile swipe app** (`mobile/`): phone-first PWA for annotation in spare moments —
+  swipe right = same idea, left = different; tap fallbacks; streak counter with haptics;
+  leaderboard, rank and consistency score; "not a saying" reporting; installable to the
+  home screen (manifest); light/dark theme. Served by a four-endpoint FastAPI backend
+  (`mobile/mobile_api.py`) over the same SQLite database and constraints table the
+  reliability model and clustering already use; same `ANNOTATOR_CODE` gate; candidate
+  pairs from the uncertain-zone kNN pool with periodic refresh, disputed pairs mixed in.
+- Deployment: second service + subdomain in `deploy/docker-compose.yml` / `Caddyfile`;
+  requirements gain fastapi/uvicorn.
+
 ## v19.4 — 2026-07-18
 - **Annotator portal** (`annotator_app.py`): a slim, safe entry point for annotators —
   pair-judgment game (uncertain / disputed / random strategies), live leaderboard,
