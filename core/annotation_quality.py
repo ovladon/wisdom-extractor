@@ -109,3 +109,53 @@ def pairs_needing_review(pairs, target_votes=3, max_confidence=0.8):
               if p["disputed"] or p["confidence"] < max_confidence or p["n"] < target_votes]
     review.sort(key=lambda p: (not p["disputed"], p["confidence"], p["n"]))
     return review
+
+
+def krippendorff_alpha_ordinal(constraints, scale=(-1, 0, 1, 2, 3, 4)):
+    """Krippendorff's alpha (ordinal metric) over graded pair scores.
+
+    Units = unordered pairs with >= 2 scored annotations. Returns (alpha, n_units)
+    or (None, n_units) when undefined (fewer than 2 multi-annotated units or no
+    variance). Legacy binary labels are mapped must->4, cannot->0 when score is
+    missing, so mixed old/new data still yields a defined statistic.
+    """
+    from collections import defaultdict
+    vals = defaultdict(list)
+    for c in constraints:
+        s = c.get("score")
+        if s is None:
+            s = {"must": 4, "cannot": 0}.get(c.get("label"))
+        if s is None:
+            continue
+        vals[_pair_key(int(c["a_id"]), int(c["b_id"]))].append(int(s))
+    units = {k: v for k, v in vals.items() if len(v) >= 2}
+    if len(units) < 2:
+        return None, len(units)
+    levels = sorted(scale)
+    # ordinal distance: squared difference of cumulative ranks
+    def dist(a, b):
+        ia, ib = levels.index(a), levels.index(b)
+        return float((ia - ib) ** 2)
+    # observed disagreement
+    Do_num, Do_den = 0.0, 0.0
+    all_vals = []
+    for v in units.values():
+        m = len(v)
+        all_vals.extend(v)
+        for i in range(m):
+            for j in range(m):
+                if i != j:
+                    Do_num += dist(v[i], v[j])
+        Do_den += m * (m - 1)
+    if Do_den == 0:
+        return None, len(units)
+    Do = Do_num / Do_den
+    # expected disagreement from pooled values
+    n = len(all_vals)
+    De_num = sum(dist(a, b) for a in all_vals for b in all_vals if a is not b) \
+        if False else sum(dist(all_vals[i], all_vals[j])
+                          for i in range(n) for j in range(n) if i != j)
+    De = De_num / (n * (n - 1)) if n > 1 else 0.0
+    if De == 0:
+        return None, len(units)
+    return 1.0 - Do / De, len(units)

@@ -17,7 +17,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from core.persistence import (init_db, list_proverbs, add_constraint, mark_excluded,
-                              list_constraints, stats, leaderboard)
+                              list_constraints, stats, leaderboard, backfill_glosses)
 from core.annotation_quality import aggregate_constraints, pairs_needing_review
 from core.clustering import nearest_pairs
 
@@ -41,7 +41,8 @@ def _ensure_pool():
     with _lock:
         if _pool["pairs"] and time.time() - _pool["built"] < POOL_TTL:
             return
-        rows = list_proverbs(excluded=False)
+        backfill_glosses()          # ensure new rows are glossed
+        rows = [r for r in list_proverbs(excluded=False) if r.get("gloss")]
         by_id = {r["id"]: r for r in rows}
         sample = random.sample(rows, min(2500, len(rows)))
         pos, neg = nearest_pairs([r["text"] for r in sample],
@@ -51,7 +52,12 @@ def _ensure_pool():
 
 def _item(pid):
     r = _pool["by_id"].get(pid)
-    return {"id": r["id"], "text": r["text"], "people": r.get("people") or "culture unknown"} if r else None
+    if not r:
+        return None
+    gloss = r.get("gloss") or r["text"]
+    original = r["text"] if r["text"].strip() != gloss.strip() else None
+    return {"id": r["id"], "gloss": gloss, "original": original,
+            "people": r.get("people") or "culture unknown"}
 
 
 @app.get("/")
@@ -89,7 +95,8 @@ def get_pair(strategy: str = "uncertain", code: str = ""):
 class Judgment(BaseModel):
     a_id: int
     b_id: int
-    label: str  # must | cannot | exclude_a | exclude_b
+    label: str = ""   # exclude_a | exclude_b | (legacy: must | cannot)
+    score: int | None = None   # Pelican scale: 4,3,2,1,0,-1
     user: str
     code: str = ""
 
@@ -98,7 +105,11 @@ class Judgment(BaseModel):
 def judge(j: Judgment):
     _check_code(j.code)
     user = (j.user or "(anon)").strip()[:40]
-    if j.label in ("must", "cannot"):
+    if j.score is not None:
+        if j.score not in (4, 3, 2, 1, 0, -1):
+            raise HTTPException(400, "bad score")
+        add_constraint(j.a_id, j.b_id, None, user, score=j.score)
+    elif j.label in ("must", "cannot"):
         add_constraint(j.a_id, j.b_id, j.label, user)
     elif j.label == "exclude_a":
         mark_excluded(j.a_id, True)

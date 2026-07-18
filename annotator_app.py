@@ -15,7 +15,7 @@ import streamlit as st
 
 from core.persistence import (
     init_db, list_proverbs, mark_excluded, add_constraint, list_constraints,
-    stats, leaderboard,
+    stats, leaderboard, backfill_glosses,
 )
 from core.annotation_quality import aggregate_constraints, pairs_needing_review
 from core.clustering import nearest_pairs
@@ -50,13 +50,15 @@ if "db_version" not in st.session_state:
 
 @st.cache_data(show_spinner=False)
 def proverbs_df(v: int):
+    backfill_glosses()
     cols = ["id", "text", "people", "language", "family", "region", "original",
-            "claim", "quality_score", "cluster_id", "first_seen", "last_seen",
+            "claim", "gloss", "quality_score", "cluster_id", "first_seen", "last_seen",
             "url", "excluded"]
     return pd.DataFrame(list_proverbs(excluded=False), columns=cols)
 
 
-df = proverbs_df(st.session_state["db_version"])
+df_all = proverbs_df(st.session_state["db_version"])
+df = df_all[df_all["gloss"].notna()]     # annotators only see items with an English gloss
 if df.empty:
     st.warning("The database is empty — the coordinator needs to seed it first.")
     st.stop()
@@ -107,24 +109,52 @@ with tab_play:
     for col, row, label in ((c1, ra, "A"), (c2, rb, "B")):
         with col:
             st.markdown(f"**Saying {label}**")
-            st.markdown(f"> {row['text']}")
+            gloss = row.get("gloss") or row["text"]
+            st.markdown(f"> {gloss}")
+            if str(row["text"]).strip() != str(gloss).strip():
+                st.caption(f"original: {row['text']}")
             st.caption(row.get("people") or "culture unknown")
 
-    st.markdown("**Do these two sayings express the same underlying idea?**")
-    b1, b2, b3 = st.columns(3)
-    if b1.button("✅ Same idea", use_container_width=True):
-        add_constraint(int(ra["id"]), int(rb["id"]), "must", user)
+    st.markdown("**How are these two sayings related?** (judge the lesson, not the imagery)")
+
+    def _grade(v):
+        add_constraint(int(ra["id"]), int(rb["id"]), None, user, score=v)
         st.session_state["pair"] = pick_pair()
         st.session_state["done"] = st.session_state.get("done", 0) + 1
         st.rerun()
-    if b2.button("🚫 Different idea", use_container_width=True):
-        add_constraint(int(ra["id"]), int(rb["id"]), "cannot", user)
+
+    g1, g2, g3 = st.columns(3)
+    if g1.button("🎯 Same rule", help="Same rule or conclusion; only the wording differs.", use_container_width=True):
+        _grade(4)
+    if g2.button("🤝 Same advice", help="Different metaphor, same practical recommendation.", use_container_width=True):
+        _grade(3)
+    if g3.button("🧩 Same theme", help="Same general topic; not necessarily the same lesson.", use_container_width=True):
+        _grade(2)
+    g4, g5, g6 = st.columns(3)
+    if g4.button("🔗 Related, different lesson", help="Same situation, different conclusions.", use_container_width=True):
+        _grade(1)
+    if g5.button("➖ Unrelated", help="Strip the metaphors and no important idea is shared.", use_container_width=True):
+        _grade(0)
+    if g6.button("⚔️ Contradictory", help="Following one breaks the other.", use_container_width=True):
+        _grade(-1)
+    if st.button("⏭️ Skip / I don't understand one of them", use_container_width=True):
         st.session_state["pair"] = pick_pair()
-        st.session_state["done"] = st.session_state.get("done", 0) + 1
         st.rerun()
-    if b3.button("⏭️ Can't tell / skip", use_container_width=True):
-        st.session_state["pair"] = pick_pair()
-        st.rerun()
+
+    with st.expander("ⓘ How to judge — the six levels (scheme: Dr. Elena Pelican)"):
+        st.markdown("""First identify the **practical lesson** of each saying; ignore metaphors and cultural origin.
+Choose the **highest** level that applies:
+
+| Level | Meaning | Annotator test |
+|---|---|---|
+| 🎯 Same rule | identical rule/conclusion | *explaining one gives almost exactly the explanation of the other* |
+| 🤝 Same advice | different image, same recommendation | *I'd use either to advise someone in the same situation* |
+| 🧩 Same theme | same topic, different aspects | *they answer the same general problem* |
+| 🔗 Related, different lesson | same situation, other advice | *could appear in one discussion without saying the same thing* |
+| ➖ Unrelated | no shared idea | *strip the metaphors and nothing important is shared* |
+| ⚔️ Contradictory | incompatible advice | *following one breaks the other* |
+
+If you don't understand one of the sayings, use **Skip**.""")
 
     e1, e2 = st.columns(2)
     if e1.button("❌ A is not a real saying"):

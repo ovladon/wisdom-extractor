@@ -32,6 +32,7 @@ main{flex:1;display:flex;flex-direction:column;justify-content:center;padding:8p
 @media (prefers-reduced-motion:reduce){#card{transition:none}}
 .saying{margin:0 0 4px;font-size:17.5px;font-weight:500;text-wrap:balance}
 .who{color:var(--ink3);font-size:12.5px;text-transform:uppercase;letter-spacing:.05em;margin-bottom:12px}
+.orig{color:var(--ink2);font-size:13px;font-style:italic;margin:-2px 0 6px}
 .divider{border-top:1px dashed var(--line);margin:12px 0}
 .hint{position:absolute;top:14px;font-size:15px;font-weight:700;padding:5px 11px;border-radius:8px;
   opacity:0;transition:opacity .1s;color:#fff;pointer-events:none}
@@ -43,6 +44,14 @@ button{font:inherit;border:0;border-radius:12px;padding:15px 8px;font-weight:650
 .actions2{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px;margin-top:8px}
 .actions2 button{background:transparent;color:var(--ink3);border:1px solid var(--line);font-weight:500;font-size:13px;padding:10px 4px}
 .swipetip{text-align:center;color:var(--ink3);font-size:12px;margin-top:10px}
+.levels{display:grid;gap:8px;margin-top:12px}
+.levels button{display:flex;flex-direction:column;align-items:flex-start;gap:2px;text-align:left;
+  background:var(--card);color:var(--ink);border:1px solid var(--line);padding:11px 14px}
+.levels button b{font-size:15px}
+.levels button span{color:var(--ink3);font-size:12px;font-weight:400}
+.levels button.contra{border-color:var(--diff)}
+.guide{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:6px 14px;margin-top:10px;font-size:13.5px}
+.guide p{margin:8px 0}
 footer{padding:6px 16px 12px;display:flex;justify-content:space-between;color:var(--ink3);font-size:12.5px}
 footer a{color:var(--accent);text-decoration:none}
 /* setup + board panels */
@@ -86,22 +95,43 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
       <span class="hint" id="hintSame">SAME ✓</span>
       <span class="hint" id="hintDiff">DIFFERENT ✗</span>
       <p class="saying" id="textA">…</p>
+      <div class="orig" id="origA"></div>
       <div class="who" id="whoA"></div>
       <div class="divider"></div>
       <p class="saying" id="textB">…</p>
+      <div class="orig" id="origB"></div>
       <div class="who" id="whoB"></div>
     </div>
   </div>
   <div class="actions">
-    <button id="bDiff" onclick="judge('cannot')">✗ Different</button>
-    <button id="bSame" onclick="judge('must')">✓ Same idea</button>
+    <button id="bDiff" onclick="score(0)">➖ Unrelated</button>
+    <button id="bSame" onclick="showLevels()">🔗 Related…</button>
+  </div>
+  <div id="levels" class="levels hidden">
+    <button onclick="score(4)"><b>Same rule</b><span>explaining one explains the other</span></button>
+    <button onclick="score(3)"><b>Same advice</b><span>different image, same recommendation</span></button>
+    <button onclick="score(2)"><b>Same theme</b><span>same topic, different lesson possible</span></button>
+    <button onclick="score(1)"><b>Related, different lesson</b><span>same situation, other advice</span></button>
+    <button onclick="score(-1)" class="contra"><b>Contradictory</b><span>following one breaks the other</span></button>
   </div>
   <div class="actions2">
-    <button onclick="nextPair()">Skip</button>
+    <button onclick="nextPair()">Skip / unsure</button>
     <button onclick="judge('exclude_a')">A isn't a saying</button>
     <button onclick="judge('exclude_b')">B isn't a saying</button>
   </div>
-  <div class="swipetip">…or swipe the card: right = same, left = different</div>
+  <div class="swipetip">…or swipe: left = unrelated, right = related (then pick how)</div>
+  <div class="swipetip"><a href="#" onclick="toggleGuide();return false" style="color:var(--accent)">ⓘ How to judge — the 6 levels</a></div>
+  <div id="guide" class="guide hidden">
+    <p><b>Judge the idea, not the imagery.</b> First ask: what practical lesson does each saying teach?</p>
+    <p>🎯 <b>Same rule</b> — same rule or conclusion; only the wording differs. <i>Test: explaining one gives almost exactly the explanation of the other.</i></p>
+    <p>🤝 <b>Same advice</b> — different metaphor, same practical recommendation. <i>Test: I'd use either to advise someone in the same situation.</i></p>
+    <p>🧩 <b>Same theme</b> — same general topic, but not necessarily the same lesson. <i>Test: they answer the same general problem.</i></p>
+    <p>🔗 <b>Related, different lesson</b> — same situation, different conclusions. <i>Test: could appear in one discussion without saying the same thing.</i></p>
+    <p>⚔️ <b>Contradictory</b> — incompatible advice. <i>Test: following one breaks the other.</i></p>
+    <p>➖ <b>Unrelated</b> — strip the metaphors and no important idea is shared.</p>
+    <p style="color:var(--ink3)">If several fit, choose the highest. If you don't understand a saying, use Skip.
+    Scheme: Dr. Elena Pelican.</p>
+  </div>
 </main>
 <footer>
   <a href="#" onclick="showBoard();return false">🏆 My stats & leaderboard</a>
@@ -144,21 +174,36 @@ async function nextPair(){
   const d=await api(`/api/pair?strategy=${strategy}&code=${encodeURIComponent(code)}`);
   if(!d)return;
   pair=d;
-  $("textA").textContent=d.a.text; $("whoA").textContent=d.a.people;
-  $("textB").textContent=d.b.text; $("whoB").textContent=d.b.people;
+  $("levels").classList.add("hidden");
+  $("textA").textContent=d.a.gloss; $("whoA").textContent=d.a.people;
+  $("textB").textContent=d.b.gloss; $("whoB").textContent=d.b.people;
+  $("origA").textContent=d.a.original?d.a.original:""; $("origA").style.display=d.a.original?"":"none";
+  $("origB").textContent=d.b.original?d.b.original:""; $("origB").style.display=d.b.original?"":"none";
   const c=$("card");c.style.transform="";c.style.opacity=1;
+}
+
+function showLevels(){$("levels").classList.toggle("hidden");}
+function toggleGuide(){$("guide").classList.toggle("hidden");}
+
+async function score(v){
+  if(!pair)return;
+  $("levels").classList.add("hidden");
+  const body={a_id:pair.a.id,b_id:pair.b.id,score:v,user,code};
+  api("/api/judge",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  session++;streak++;buzz(12);
+  $("streak").textContent=`✦ ${session} this session`;
+  if(session%10===0)toast(`${session} judgments — you're on fire 🔥`);
+  animateOut(v>=2?1:(v<=0?-1:0));
+  setTimeout(nextPair,140);
 }
 
 async function judge(label){
   if(!pair)return;
+  $("levels").classList.add("hidden");
   const body={a_id:pair.a.id,b_id:pair.b.id,label,user,code};
   api("/api/judge",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
-  if(label==="must"||label==="cannot"){
-    session++;streak++;buzz(12);
-    $("streak").textContent=`✦ ${session} this session`;
-    if(session%10===0)toast(`${session} judgments — you're on fire 🔥`);
-  } else { toast("Marked. Thank you!"); }
-  animateOut(label==="must"?1:(label==="cannot"?-1:0));
+  toast("Marked. Thank you!");
+  animateOut(0);
   setTimeout(nextPair,140);
 }
 
@@ -181,8 +226,8 @@ wrap.addEventListener("touchmove",e=>{
 },{passive:true});
 wrap.addEventListener("touchend",()=>{
   $("hintSame").style.opacity=0;$("hintDiff").style.opacity=0;
-  if(dx>90)judge("must");
-  else if(dx<-90)judge("cannot");
+  if(dx>90){$("card").style.transform="";showLevels();}
+  else if(dx<-90)score(0);
   else $("card").style.transform="";
   sx=null;dx=0;
 });

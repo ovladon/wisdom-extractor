@@ -17,6 +17,7 @@ PROVERB_COLUMNS = [
     ("region", "TEXT"),
     ("original", "TEXT"),        # mother-tongue original if different from text
     ("claim", "TEXT"),           # canonicalized proposition (paper's `claim`)
+    ("gloss", "TEXT"),           # English gloss shown to annotators (None = not annotatable)
     ("quality_score", "INTEGER"),
     ("cluster_id", "INTEGER"),
     ("first_seen", "INTEGER"),
@@ -61,6 +62,10 @@ def init_db():
     for col, typ in PROVERB_COLUMNS:
         if col not in have:
             cur.execute(f"ALTER TABLE proverbs ADD COLUMN {col} {typ}")
+    # graded semantic-equivalence score (Pelican scale: 4..0 and -1), alongside legacy label
+    cur.execute("PRAGMA table_info(constraints)")
+    if "score" not in {r[1] for r in cur.fetchall()}:
+        cur.execute("ALTER TABLE constraints ADD COLUMN score INTEGER")
     cur.executescript("""
     CREATE INDEX IF NOT EXISTS idx_proverbs_excluded ON proverbs(excluded);
     CREATE INDEX IF NOT EXISTS idx_proverbs_people ON proverbs(people);
@@ -133,7 +138,7 @@ def bulk_insert_proverbs(rows):
 
 def list_proverbs(excluded=False, with_claims_only=False):
     con = connect(); cur = con.cursor()
-    q = """SELECT id,text,people,language,family,region,original,claim,quality_score,
+    q = """SELECT id,text,people,language,family,region,original,claim,gloss,quality_score,
                   cluster_id,first_seen,last_seen,url,excluded FROM proverbs"""
     conds = []
     if not excluded:
@@ -144,7 +149,7 @@ def list_proverbs(excluded=False, with_claims_only=False):
         q += " WHERE " + " AND ".join(conds)
     cur.execute(q)
     rows = cur.fetchall(); con.close()
-    keys = ["id", "text", "people", "language", "family", "region", "original", "claim",
+    keys = ["id", "text", "people", "language", "family", "region", "original", "claim", "gloss",
             "quality_score", "cluster_id", "first_seen", "last_seen", "url", "excluded"]
     return [dict(zip(keys, r)) for r in rows]
 
@@ -250,6 +255,24 @@ def backfill_attestation_years(source_years_json=None):
     return len(from_cit), len(from_src)
 
 
+def backfill_glosses():
+    """Compute the English gloss for rows missing one. Returns (n_glossed, n_unglossable)."""
+    from .gloss import extract_gloss
+    con = connect(); cur = con.cursor()
+    cur.execute("SELECT id, text FROM proverbs WHERE gloss IS NULL")
+    rows = cur.fetchall()
+    updates, n_none = [], 0
+    for pid, text in rows:
+        g = extract_gloss(text or "")
+        if g:
+            updates.append((g, pid))
+        else:
+            n_none += 1
+    cur.executemany("UPDATE proverbs SET gloss=? WHERE id=?", updates)
+    con.commit(); con.close()
+    return len(updates), n_none
+
+
 def enrich_family_region(metadata_csv):
     """Fill family/region from a people metadata CSV (people,region,language_family,...)."""
     if not os.path.exists(metadata_csv):
@@ -274,10 +297,19 @@ def enrich_family_region(metadata_csv):
 
 # ---------- constraints / annotation ----------
 
-def add_constraint(a_id, b_id, label, user):
+# Pelican graded scale -> hard clustering link:
+#   4 identity / 3 functional equivalence -> must-link
+#   2 same theme                          -> no hard link (stored as 'theme')
+#   1 complementary / 0 unrelated / -1 contradiction -> cannot-link
+SCORE_TO_LABEL = {4: "must", 3: "must", 2: "theme", 1: "cannot", 0: "cannot", -1: "cannot"}
+
+
+def add_constraint(a_id, b_id, label, user, score=None):
+    if score is not None and label is None:
+        label = SCORE_TO_LABEL.get(int(score), "theme")
     con = connect(); cur = con.cursor()
-    cur.execute("INSERT INTO constraints(a_id,b_id,label,user,created_at) VALUES(?,?,?,?,?)",
-                (a_id, b_id, label, user, time.time()))
+    cur.execute("INSERT INTO constraints(a_id,b_id,label,score,user,created_at) VALUES(?,?,?,?,?,?)",
+                (a_id, b_id, label, score, user, time.time()))
     con.commit(); con.close()
 
 
@@ -295,11 +327,11 @@ def bulk_apply(pending_ops):
 def list_constraints(label=None):
     con = connect(); cur = con.cursor()
     if label:
-        cur.execute("SELECT a_id,b_id,label,user FROM constraints WHERE label=?", (label,))
+        cur.execute("SELECT a_id,b_id,label,score,user FROM constraints WHERE label=?", (label,))
     else:
-        cur.execute("SELECT a_id,b_id,label,user FROM constraints")
+        cur.execute("SELECT a_id,b_id,label,score,user FROM constraints")
     rows = cur.fetchall(); con.close()
-    return [{"a_id": r[0], "b_id": r[1], "label": r[2], "user": r[3]} for r in rows]
+    return [{"a_id": r[0], "b_id": r[1], "label": r[2], "score": r[3], "user": r[4]} for r in rows]
 
 
 def stats():
@@ -333,8 +365,9 @@ def leaderboard(top=50):
 
 def export_annotations():
     con = connect(); cur = con.cursor()
-    cur.execute("SELECT a_id,b_id,label,user,created_at FROM constraints")
-    cons = [{"a_id": r[0], "b_id": r[1], "label": r[2], "user": r[3], "created_at": r[4]} for r in cur.fetchall()]
+    cur.execute("SELECT a_id,b_id,label,score,user,created_at FROM constraints")
+    cons = [{"a_id": r[0], "b_id": r[1], "label": r[2], "score": r[3], "user": r[4], "created_at": r[5]}
+            for r in cur.fetchall()]
     cur.execute("SELECT id FROM proverbs WHERE excluded=1")
     excl = [r[0] for r in cur.fetchall()]
     con.close()

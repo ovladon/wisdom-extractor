@@ -72,7 +72,7 @@ seed_sources_if_empty()
 
 
 PROVERB_FIELDS = ["id", "text", "people", "language", "family", "region", "original",
-                  "claim", "quality_score", "cluster_id", "first_seen", "last_seen",
+                  "claim", "gloss", "quality_score", "cluster_id", "first_seen", "last_seen",
                   "url", "excluded"]
 
 
@@ -391,12 +391,10 @@ with tabs[5]:
             drop_from_pairs(pid)
             st.session_state["pair"] = pick_pair()
 
-        def constrain(label):
-            if write_mode.startswith("Instant"):
-                add_constraint(int(ra["id"]), int(rb["id"]), label, user); bump()
-            else:
-                st.session_state["pending_ops"].append(
-                    {"op": "constraint", "a": int(ra["id"]), "b": int(rb["id"]), "label": label, "user": user})
+        def constrain_score(v):
+            # graded judgments write immediately (batch queue predates the graded scheme)
+            add_constraint(int(ra["id"]), int(rb["id"]), None, user, score=v)
+            bump()
             st.session_state["pair"] = pick_pair()
 
         c1, c2 = st.columns(2)
@@ -413,12 +411,22 @@ with tabs[5]:
             if st.button("❌ Not a saying (B)"):
                 exclude(int(rb["id"])); st.toast("Excluded B", icon="❌")
 
+        st.caption("Graded scheme (Pelican): judge the lesson, not the imagery; pick the highest level that applies.")
         d1, d2, d3 = st.columns(3)
-        if d1.button("✅ Same idea (must-link)"):
-            constrain("must"); st.toast("Saved MUST link", icon="✅")
-        if d2.button("🚫 Different idea (cannot-link)"):
-            constrain("cannot"); st.toast("Saved CANNOT link", icon="🚫")
-        if d3.button("⏭️ Skip"):
+        if d1.button("🎯 Same rule (4)"):
+            constrain_score(4); st.toast("Saved: same rule", icon="🎯")
+        if d2.button("🤝 Same advice (3)"):
+            constrain_score(3); st.toast("Saved: same advice", icon="🤝")
+        if d3.button("🧩 Same theme (2)"):
+            constrain_score(2); st.toast("Saved: same theme", icon="🧩")
+        d4, d5, d6 = st.columns(3)
+        if d4.button("🔗 Related, diff. lesson (1)"):
+            constrain_score(1); st.toast("Saved: related", icon="🔗")
+        if d5.button("➖ Unrelated (0)"):
+            constrain_score(0); st.toast("Saved: unrelated", icon="➖")
+        if d6.button("⚔️ Contradictory (−1)"):
+            constrain_score(-1); st.toast("Saved: contradiction", icon="⚔️")
+        if st.button("⏭️ Skip"):
             st.session_state["pair"] = pick_pair()
 
         if write_mode.startswith("Batch") and len(st.session_state["pending_ops"]) >= autosave_after:
@@ -459,6 +467,13 @@ with tabs[6]:
             st.caption(f"Violations — must: {agr['must_violations'][:10]} cannot: {agr['cannot_violations'][:10]}")
 
         st.subheader("Annotation consensus & annotator reliability")
+        from core.annotation_quality import krippendorff_alpha_ordinal
+        alpha, n_units = krippendorff_alpha_ordinal(list_constraints())
+        if alpha is not None:
+            st.metric("Krippendorff's α (ordinal, multi-annotated pairs)", f"{alpha:.3f}",
+                      help=f"Computed over {n_units} pairs with ≥2 graded annotations.")
+        else:
+            st.caption(f"Krippendorff's α: needs ≥2 pairs with multiple annotations (have {n_units}).")
         agg_pairs, annotators = aggregate_constraints(list_constraints())
         if agg_pairs:
             n_disputed = sum(1 for p in agg_pairs if p["disputed"])

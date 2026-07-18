@@ -4,6 +4,22 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.6 — 2026-07-18
+- **Graded semantic-equivalence scheme (Dr. Elena Pelican).** Binary same/different is
+  replaced everywhere by her 6-level scale — 4 same rule, 3 same advice, 2 same theme,
+  1 related/different lesson, 0 unrelated, −1 contradictory — with her operational
+  annotator tests as the in-app guide. Mobile uses her two-stage flow: swipe left =
+  unrelated; swipe right = related → pick the relation. Scores are stored raw;
+  hard clustering constraints derive as ≥3 → must-link, ≤1 → cannot-link, 2 → recorded.
+  Legacy binary annotations remain valid.
+- **Inter-annotator agreement**: ordinal Krippendorff's α over multi-annotated pairs,
+  shown in Diagnostics (with legacy-binary mapping so mixed data stays measurable).
+- **English glosses** (`core/gloss.py`): annotators are never shown a pair they cannot
+  read — an English gloss is extracted from markers ("Translation:", "Literally:"),
+  bilingual texts, or English originals (60.9% of corpus, 11,093 items); unglossed rows
+  stay in the corpus but out of annotation pools. Gloss shown big, original beneath.
+- Review-response plan: `docs/pelican_review_plan.md`.
+
 ## v19.5 — 2026-07-18
 - **Mobile swipe app** (`mobile/`): phone-first PWA for annotation in spare moments —
   swipe right = same idea, left = different; tap fallbacks; streak counter with haptics;
