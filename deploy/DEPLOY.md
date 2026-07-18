@@ -10,7 +10,7 @@ consistency score, world map. No admin tabs, optional access code, all judgments
 one shared database. You keep the full `app.py` for yourself, on the same database.
 
 ## Option A (recommended): small VPS — ~€4/month, full control, data is yours
-1. Create an Ubuntu VPS (Hetzner CX22 ≈ €3.8/mo, or DigitalOcean/OVH equivalent).
+1. Create an Ubuntu VPS (Hetzner CX23: €5.49 + €0.50 IPv4 + VAT ≈ €7/mo total, post-June-2026 prices).
 2. Point a DNS A record (e.g. `wisdom.yourdomain.com`) at the server IP.
    (A domain via Netlify DNS works fine for this — that part of Netlify IS usable.)
 3. On the server:
