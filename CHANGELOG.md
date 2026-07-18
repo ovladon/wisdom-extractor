@@ -4,6 +4,16 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.7 — 2026-07-18
+- **Self-maintenance** (`scripts/maintain.py`): one cron-able command that scrapes the
+  next N catalog sources (round-robin cursor), backfills culture/family/years/glosses,
+  canonicalizes new rows, aggregates all annotations into consensus constraints, and
+  reclusters the corpus — new sayings become annotatable automatically, and accumulated
+  human judgments reshape the clusters on every run. Auto-loads the sources catalog
+  into DBs that lack it.
+- `deploy/backup.sh` (nightly DB backups, 30-day retention) + cron recipes in DEPLOY.md.
+- Noise filter: web-nav/ad debris patterns (scraped-page ads no longer enter the corpus).
+
 ## v19.6 — 2026-07-18
 - **Graded semantic-equivalence scheme (Dr. Elena Pelican).** Binary same/different is
   replaced everywhere by her 6-level scale — 4 same rule, 3 same advice, 2 same theme,

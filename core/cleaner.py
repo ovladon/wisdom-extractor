@@ -17,6 +17,9 @@ BOILERPLATE_RX = [
     re.compile(r"print and punctuation errors", re.I),
     re.compile(r"^\s*\[?\d+\]?\s*$"),
     re.compile(r"proverb of the month", re.I),
+    # web-nav / ad debris seen on scraped pages
+    re.compile(r"\b(one-to-one|lessons? (with|online)|like a native|phrasebook|learn \w+ (online|fast)|"
+               r"click here|sign up|subscribe|privacy policy|cookie|omniglot|advertisement)\b", re.I),
     # source-book headers: "Nathan Bailey (1721). Divers Proverbs…", "Thomas Fuller, Gnomologia (1732)"
     re.compile(r"^[A-Z][\w'’.]+\s+[A-Z][\w'’.]+\s*[,(].{0,80}\(1[4-9]\d\d\)"),
     re.compile(r"\b(Gnomologia|Almanack|Paroemiologia|Adagia|Divers Proverbs|Introductio ad prudentiam)\b"),

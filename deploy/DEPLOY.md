@@ -52,3 +52,20 @@ It shares the same database and access code as the portal. The compose file serv
 as a second subdomain (see Caddyfile) — that's the URL to share for
 "annotate whenever you have a minute". On a phone, "Add to Home Screen" installs it
 like an app. Local test: `uvicorn mobile.mobile_api:app --port 8600`.
+
+## Self-maintenance (v19.7): the corpus feeds and improves itself
+
+`scripts/maintain.py` digests everything new in one run: optionally scrapes the next N
+catalog sources (polite round-robin), backfills culture/years/glosses, canonicalizes new
+rows, folds ALL accumulated human annotations into consensus constraints, and reclusters.
+On the VPS, add two cron lines (crontab -e, on the host, from the deploy/ directory):
+
+```cron
+# nightly at 03:15 — backup the database (annotations are irreplaceable)
+15 3 * * * cd /root/wisdom-extractor/deploy && ./backup.sh
+# weekly, Sunday 04:00 — scrape 2 sources and digest everything
+0 4 * * 0 cd /root/wisdom-extractor/deploy && docker compose exec -T wisdom python scripts/maintain.py --scrape 2
+```
+
+Result: new sayings appear, get glossed and clustered; annotators' judgments reshape
+clusters weekly; nothing needs manual attention.
