@@ -162,6 +162,7 @@ function toast(msg){const t=$("toast");t.textContent=msg;t.style.opacity=1;
 function buzz(ms){if(navigator.vibrate)navigator.vibrate(ms);}
 
 async function api(path,opts){
+  opts=opts||{};opts.headers=Object.assign({"X-Access-Code":code},opts.headers||{});
   const r=await fetch(path,opts);
   if(r.status===401){localStorage.removeItem("wl_code");location.reload();return null;}
   if(!r.ok){toast("Connection hiccup — retrying…");return null;}
@@ -171,7 +172,7 @@ async function api(path,opts){
 async function nextPair(){
   // alternate strategies to keep it fresh: mostly uncertain, sometimes disputed
   strategy=(session%7===6)?"disputed":"uncertain";
-  const d=await api(`/api/pair?strategy=${strategy}&code=${encodeURIComponent(code)}`);
+  const d=await api(`/api/pair?strategy=${strategy}`);
   if(!d)return;
   pair=d;
   $("levels").classList.add("hidden");
@@ -233,7 +234,7 @@ wrap.addEventListener("touchend",()=>{
 });
 
 async function showBoard(){
-  const d=await api(`/api/me?user=${encodeURIComponent(user)}&code=${encodeURIComponent(code)}`);
+  const d=await api(`/api/me?user=${encodeURIComponent(user)}`);
   if(!d)return;
   $("stTotal").textContent=d.total;
   $("stRank").textContent=d.rank?("#"+d.rank):"—";
@@ -257,7 +258,7 @@ async function start(){
 }
 async function boot(){
   $("setup").classList.add("hidden");$("game").classList.remove("hidden");
-  const d=await api(`/api/me?user=${encodeURIComponent(user)}&code=${encodeURIComponent(code)}`);
+  const d=await api(`/api/me?user=${encodeURIComponent(user)}`);
   if(d)$("corpusline").textContent=`${d.corpus.proverbs.toLocaleString()} sayings · ${d.corpus.peoples} peoples`;
   nextPair();
 }

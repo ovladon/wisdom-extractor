@@ -9,10 +9,11 @@ Env:  WISDOM_DB_PATH   shared database (same as the Streamlit apps)
       ANNOTATOR_CODE   optional access code (same semantics as the portal)
 """
 import os, random, sys, threading, time
+from collections import defaultdict, deque
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
@@ -24,16 +25,53 @@ from core.clustering import nearest_pairs
 HERE = os.path.dirname(os.path.abspath(__file__))
 CODE = os.environ.get("ANNOTATOR_CODE", "")
 
+# --- abuse guards ---
+RATE_WINDOW = 60          # seconds
+RATE_MAX = 90             # requests per window per client (fast annotators stay well under)
+EXCLUDE_DAILY_MAX = 30    # "not a saying" reports per user per day
+_hits = defaultdict(deque)
+_excludes = defaultdict(deque)
+
+
+def _rate_check(key):
+    now = time.time()
+    q = _hits[key]
+    while q and now - q[0] > RATE_WINDOW:
+        q.popleft()
+    if len(q) >= RATE_MAX:
+        raise HTTPException(429, "slow down a little — try again in a minute")
+    q.append(now)
+
+
+def _exclude_check(user):
+    now = time.time()
+    q = _excludes[user]
+    while q and now - q[0] > 86400:
+        q.popleft()
+    if len(q) >= EXCLUDE_DAILY_MAX:
+        raise HTTPException(429, "daily 'not a saying' limit reached — thank you, that's plenty")
+    q.append(now)
+
 app = FastAPI(title="Wisdom Lab mobile", docs_url=None, redoc_url=None)
 init_db()
+
+
+@app.middleware("http")
+async def security_headers(request, call_next):
+    resp = await call_next(request)
+    resp.headers["X-Content-Type-Options"] = "nosniff"
+    resp.headers["Referrer-Policy"] = "no-referrer"
+    resp.headers["X-Frame-Options"] = "DENY"
+    return resp
 
 _pool = {"pairs": [], "by_id": {}, "built": 0.0}
 _lock = threading.Lock()
 POOL_TTL = 1800  # rebuild candidate pool every 30 min
 
 
-def _check_code(code):
-    if CODE and code != CODE:
+def _check_code(code, request=None):
+    supplied = code or (request.headers.get("x-access-code", "") if request is not None else "")
+    if CODE and supplied != CODE:
         raise HTTPException(401, "wrong access code")
 
 
@@ -71,8 +109,9 @@ def manifest():
 
 
 @app.get("/api/pair")
-def get_pair(strategy: str = "uncertain", code: str = ""):
-    _check_code(code)
+def get_pair(request: Request, strategy: str = "uncertain", code: str = ""):
+    _check_code(code, request)
+    _rate_check(request.client.host if request.client else "?")
     _ensure_pool()
     if strategy == "disputed":
         agg, _ = aggregate_constraints(list_constraints())
@@ -102,8 +141,9 @@ class Judgment(BaseModel):
 
 
 @app.post("/api/judge")
-def judge(j: Judgment):
-    _check_code(j.code)
+def judge(j: Judgment, request: Request):
+    _check_code(j.code, request)
+    _rate_check(request.client.host if request.client else "?")
     user = (j.user or "(anon)").strip()[:40]
     if j.score is not None:
         if j.score not in (4, 3, 2, 1, 0, -1):
@@ -112,9 +152,11 @@ def judge(j: Judgment):
     elif j.label in ("must", "cannot"):
         add_constraint(j.a_id, j.b_id, j.label, user)
     elif j.label == "exclude_a":
+        _exclude_check(user)
         mark_excluded(j.a_id, True)
         _pool["by_id"].pop(j.a_id, None)
     elif j.label == "exclude_b":
+        _exclude_check(user)
         mark_excluded(j.b_id, True)
         _pool["by_id"].pop(j.b_id, None)
     else:
@@ -123,8 +165,9 @@ def judge(j: Judgment):
 
 
 @app.get("/api/me")
-def me(user: str, code: str = ""):
-    _check_code(code)
+def me(request: Request, user: str, code: str = ""):
+    _check_code(code, request)
+    _rate_check(request.client.host if request.client else "?")
     user = user.strip()[:40]
     board = leaderboard()
     rank = next((i + 1 for i, r in enumerate(board) if r["user"] == user), None)

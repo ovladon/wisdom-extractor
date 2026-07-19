@@ -4,6 +4,13 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.9 — 2026-07-19
+- **API hardening**: per-client rate limiting (90 req/min), daily cap on
+  "not a saying" exclusions (30/user/day), access code accepted via `X-Access-Code`
+  header (kept out of URL logs; query param still accepted for compatibility),
+  and standard security headers (nosniff, no-referrer, frame deny).
+- Frontend sends the code as a header.
+
 ## v19.8 — 2026-07-19
 - **Dedicated-phone hosting kit** (`deploy/android/`): run the annotation service on a
   spare Android phone (no root; Termux + proot Ubuntu) — `setup_phone.sh` one-command
