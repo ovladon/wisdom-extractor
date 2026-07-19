@@ -6,3 +6,7 @@ wisdom.db*
 *.db-shm
 dist/
 *.log
+
+# never let documents ride along into the public repo
+*.pdf
+*.docx
