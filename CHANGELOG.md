@@ -4,6 +4,15 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.8 — 2026-07-19
+- **Dedicated-phone hosting kit** (`deploy/android/`): run the annotation service on a
+  spare Android phone (no root; Termux + proot Ubuntu) — `setup_phone.sh` one-command
+  install, `start_phone.sh` (server + tunnel + daily backup loop + weekly maintenance
+  loop), Termux:Boot recipe for reboot self-healing, and an optional permanent link via
+  a Netlify redirect-site auto-updated on every tunnel restart
+  (`update_netlify_redirect.sh`). Guide: `deploy/android/PHONE_SERVER.md`.
+- `requirements-server.txt`: server-only dependency subset (no Streamlit) for ARM/proot.
+
 ## v19.7 — 2026-07-18
 - **Self-maintenance** (`scripts/maintain.py`): one cron-able command that scrapes the
   next N catalog sources (round-robin cursor), backfills culture/family/years/glosses,
