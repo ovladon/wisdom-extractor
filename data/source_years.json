@@ -1,11 +1,17 @@
 {
-  "_comment": "URL substring -> publication year of the dated source. Used as 'attested no later than' bound when no citation year is found in the text itself.",
-  "gutenberg.org/files/51090": 1857,
-  "gutenberg.org/files/63190": 1867,
-  "gutenberg.org/ebooks/8020": 1611,
-  "hausaproverbs00merrrich": 1905,
-  "bsb10522900": 1867,
-  "zeno.org/wander-1867": 1867,
-  "51090": 1857,
-  "63190": 1867
+ "_comment": "URL substring -> publication year of the dated source. Used as 'attested no later than' bound when no citation year is found in the text itself.",
+ "gutenberg.org/files/51090": 1857,
+ "gutenberg.org/files/63190": 1867,
+ "gutenberg.org/ebooks/8020": 1611,
+ "hausaproverbs00merrrich": 1905,
+ "bsb10522900": 1867,
+ "zeno.org/wander-1867": 1867,
+ "51090": 1857,
+ "63190": 1867,
+ "files/7018": 1663,
+ "files/26150": 1870,
+ "files/39281": 1880,
+ "files/44866": 1885,
+ "epub/74916": 1883,
+ "files/48130": 1905
 }
