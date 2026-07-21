@@ -1,0 +1,67 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>The Wisdom Extractor — mapping humanity's proverbs</title>
+<meta name="description" content="An open research instrument mapping the proverbs of 76+ peoples: where the same wisdom recurs, and what that says about being human.">
+<style>
+:root{--bg:#f7f6f2;--card:#fdfdfb;--ink:#171613;--ink2:#5a5850;--ink3:#8a877c;--line:#dedbd2;--accent:#2a78d6;--go:#1baf7a}
+@media (prefers-color-scheme:dark){:root{--bg:#141412;--card:#1c1c19;--ink:#f2f1ea;--ink2:#b9b7ab;--ink3:#7f7d72;--line:#33322c;--accent:#3987e5;--go:#199e70}}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font:17px/1.6 Seravek,"Gill Sans Nova",Ubuntu,Calibri,"DejaVu Sans",sans-serif}
+.wrap{max-width:760px;margin:0 auto;padding:48px 22px 60px}
+h1{font-size:clamp(30px,6vw,44px);line-height:1.15;margin:0 0 10px;letter-spacing:-.015em}
+.sub{color:var(--ink2);font-size:19px;max-width:58ch}
+.cta{display:inline-block;background:var(--go);color:#fff;text-decoration:none;font-weight:700;
+     padding:15px 28px;border-radius:12px;font-size:18px;margin:26px 0 8px}
+.cta:hover{filter:brightness(1.06)}
+.ctanote{color:var(--ink3);font-size:14px;margin:0 0 34px}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:18px 22px;margin:14px 0}
+.card h2{font-size:17px;margin:0 0 6px}
+.card p{margin:0;color:var(--ink2);font-size:15.5px}
+.q{font-style:italic;color:var(--ink2);border-left:3px solid var(--accent);padding-left:14px;margin:30px 0}
+.nums{display:flex;gap:26px;flex-wrap:wrap;margin:26px 0 8px}
+.nums div b{display:block;font-size:26px;font-variant-numeric:tabular-nums}
+.nums div span{color:var(--ink3);font-size:13px}
+footer{margin-top:44px;color:var(--ink3);font-size:14px;border-top:1px solid var(--line);padding-top:18px}
+footer a{color:var(--accent);text-decoration:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Humanity has been writing itself notes for three thousand years.</h1>
+  <p class="sub">Proverbs are how communities remember what works: when to trust, when to wait,
+  when many hands help and when too many cooks spoil it. The Wisdom Extractor is an open
+  research instrument that maps this knowledge across cultures — and everyone can help.</p>
+
+  <a class="cta" href="https://annotate.wisdomextractor.com">🧭 Play the Wisdom Lab — judge a pair of proverbs</a>
+  <p class="ctanote">Thirty seconds on your phone helps map humanity's shared wisdom. No sign-up; you'll need the access code from your invitation.</p>
+
+  <div class="q">"Where there is smoke, there is fire." — attested in 17 cultures,
+  from Spain to Vietnam, across at least five language families.</div>
+
+  <div class="nums">
+    <div><b>18,000+</b><span>proverbs with provenance</span></div>
+    <div><b>76</b><span>peoples represented</span></div>
+    <div><b>1562</b><span>earliest dated attestation</span></div>
+  </div>
+
+  <div class="card"><h2>What your judgments do</h2>
+  <p>Each "same idea / different idea" verdict trains and audits the alignment of proverbs
+  across languages. Judgments are aggregated with a reliability model, feed the clustering,
+  and are published (anonymously) as open scientific data.</p></div>
+
+  <div class="card"><h2>Open by design</h2>
+  <p>Code, corpus, and annotations are public: the software and data carry citable DOIs,
+  and every number in the research is reproducible by one script.</p></div>
+
+  <footer>
+    A research project by Vlad Belciug &amp; Elena Pelican (Ovidius University of Constanța) ·
+    <a href="https://github.com/ovladon/wisdom-extractor">Source code</a> ·
+    <a href="https://doi.org/10.5281/zenodo.21413838">Software DOI</a> ·
+    <a href="https://doi.org/10.5281/zenodo.21439285">Corpus DOI</a>
+  </footer>
+</div>
+</body>
+</html>

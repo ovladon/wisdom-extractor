@@ -78,8 +78,9 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
   <h2>🧭 Wisdom Lab</h2>
   <p>Help map humanity's proverbs: judge whether two sayings express the same idea.
      Thirty seconds or thirty minutes — every judgment counts.</p>
-  <input id="inName" placeholder="Your name or nickname" maxlength="40" autocomplete="nickname">
-  <input id="inCode" placeholder="Access code (if you were given one)" autocomplete="off">
+  <input id="inName" placeholder="Your name or nickname (required)" maxlength="40" autocomplete="nickname">
+  <input id="inCode" placeholder="Access code (required)" autocomplete="off">
+  <p id="setupMsg" style="color:var(--diff);font-size:13px;min-height:18px;margin:0 0 8px"></p>
   <button onclick="start()">Start judging</button>
 </div>
 
@@ -150,10 +151,20 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
   <p style="margin-top:14px"><button onclick="showGame()">← Back to judging</button></p>
 </div>
 
+<div id="humanModal" class="panel hidden">
+  <h2>One quick check 🌱</h2>
+  <p>Prove you're human the Wisdom Lab way — finish the proverb:</p>
+  <p class="saying" id="humanPrompt" style="font-size:18px">…</p>
+  <input id="humanAnswer" placeholder="the missing word" autocomplete="off" autocapitalize="none">
+  <p id="humanMsg" style="color:var(--diff);font-size:13px;min-height:18px;margin:0 0 8px"></p>
+  <button onclick="submitHuman()">That's my answer</button>
+</div>
+
 <div class="toast" id="toast"></div>
 
 <script>
 let user=localStorage.getItem("wl_name")||"", code=localStorage.getItem("wl_code")||"";
+let human=localStorage.getItem("wl_human")||"", codeRequired=true, challengeId=null;
 let pair=null, streak=0, session=0, strategy="uncertain";
 const $=id=>document.getElementById(id);
 
@@ -162,11 +173,42 @@ function toast(msg){const t=$("toast");t.textContent=msg;t.style.opacity=1;
 function buzz(ms){if(navigator.vibrate)navigator.vibrate(ms);}
 
 async function api(path,opts){
-  opts=opts||{};opts.headers=Object.assign({"X-Access-Code":code},opts.headers||{});
+  opts=opts||{};opts.headers=Object.assign({"X-Access-Code":code,"X-Human":human},opts.headers||{});
   const r=await fetch(path,opts);
-  if(r.status===401){localStorage.removeItem("wl_code");location.reload();return null;}
-  if(!r.ok){toast("Connection hiccup — retrying…");return null;}
+  if(r.status===401){
+    $("game").classList.add("hidden");$("board").classList.add("hidden");
+    $("setup").classList.remove("hidden");
+    $("setupMsg").textContent="That access code isn't right — check the one you received.";
+    return null;
+  }
+  if(r.status===403){human="";localStorage.removeItem("wl_human");showHuman();return null;}
+  if(r.status===429){toast("Easy there — a short pause, then continue 🙂");return null;}
+  if(!r.ok){toast("Connection hiccup — try again");return null;}
   return r.json();
+}
+
+async function showHuman(){
+  $("game").classList.add("hidden");$("setup").classList.add("hidden");
+  $("humanModal").classList.remove("hidden");
+  const d=await api("/api/human");
+  if(d){challengeId=d.challenge_id;$("humanPrompt").textContent=d.prompt;$("humanAnswer").value="";}
+}
+
+async function submitHuman(){
+  const ans=$("humanAnswer").value.trim();
+  if(!ans){$("humanMsg").textContent="Type the missing word.";return;}
+  const r=await fetch("/api/human",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({challenge_id:challengeId,answer:ans})});
+  if(r.ok){
+    const d=await r.json();human=d.token;localStorage.setItem("wl_human",human);
+    $("humanModal").classList.add("hidden");$("game").classList.remove("hidden");
+    toast("Welcome, human 🌿");
+    if(!pair)nextPair();
+  }else{
+    $("humanMsg").textContent="Not quite — here's another:";
+    const d=await api("/api/human");
+    if(d){challengeId=d.challenge_id;$("humanPrompt").textContent=d.prompt;$("humanAnswer").value="";}
+  }
 }
 
 async function nextPair(){
@@ -252,17 +294,25 @@ function showGame(){$("board").classList.add("hidden");$("game").classList.remov
 
 async function start(){
   user=$("inName").value.trim();code=$("inCode").value.trim();
-  if(!user){toast("Please enter a name");return;}
+  if(user.length<2){$("setupMsg").textContent="Please enter your name or nickname (at least 2 letters).";return;}
+  if(codeRequired&&!code){$("setupMsg").textContent="The access code is required — it's in the message you received.";return;}
+  $("setupMsg").textContent="";
   localStorage.setItem("wl_name",user);localStorage.setItem("wl_code",code);
   boot();
 }
 async function boot(){
   $("setup").classList.add("hidden");$("game").classList.remove("hidden");
   const d=await api(`/api/me?user=${encodeURIComponent(user)}`);
-  if(d)$("corpusline").textContent=`${d.corpus.proverbs.toLocaleString()} sayings · ${d.corpus.peoples} peoples`;
+  if(!d)return;
+  $("corpusline").textContent=`${d.corpus.proverbs.toLocaleString()} sayings · ${d.corpus.peoples} peoples`;
+  if(!human){showHuman();return;}
   nextPair();
 }
-if(user){$("inName").value=user;$("inCode").value=code;boot();}
+(async()=>{
+  try{const c=await (await fetch("/api/config")).json();codeRequired=c.code_required;
+      if(!codeRequired)$("inCode").placeholder="Access code (not needed here)";}catch(e){}
+  if(user){$("inName").value=user;$("inCode").value=code;boot();}
+})();
 </script>
 </body>
 </html>

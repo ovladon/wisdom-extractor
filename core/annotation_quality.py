@@ -26,65 +26,63 @@ def _pair_key(a, b):
 
 
 def aggregate_constraints(constraints, iterations=3):
-    """constraints: iterable of {a_id, b_id, label ('must'|'cannot'), user}.
+    """Ordinal (Pelican-scale) consensus with annotator reliability.
 
+    Works natively on graded scores (4..0, -1); legacy binary labels map to 4/0.
     Returns (pairs, annotators):
-      pairs: list of {a_id, b_id, label, n, votes_must, votes_cannot,
-                      agreement, confidence, disputed}
-      annotators: {user: {"n": votes_cast, "reliability": r}}
+      pairs: {a_id, b_id, consensus_score, label, n, votes_must, votes_cannot,
+              agreement, confidence, disputed}
+        label: 'must' if consensus >= 2.5, 'cannot' if <= 1.5, else None (theme zone)
+      annotators: {user: {n, reliability}}  — reliability = smoothed ordinal closeness
+        of the annotator's votes to consensus (1 = always on it, 0 = maximally far).
     """
-    votes = defaultdict(list)   # pair -> [(label, user), ...]
+    votes = defaultdict(list)   # pair -> [(score, user)]
     for c in constraints:
-        label = c.get("label")
-        if label not in ("must", "cannot"):
+        sc = c.get("score")
+        if sc is None:
+            sc = {"must": 4, "cannot": 0}.get(c.get("label"))
+        if sc is None:
             continue
-        votes[_pair_key(int(c["a_id"]), int(c["b_id"]))].append((label, c.get("user") or "(anon)"))
+        votes[_pair_key(int(c["a_id"]), int(c["b_id"]))].append((float(sc), c.get("user") or "(anon)"))
 
-    import math
+    HALF = 2.5   # half of the -1..4 range; closeness = 1 - |vote-consensus|/HALF (floored 0)
     reliability = defaultdict(lambda: PRIOR_CORRECT)
-    majority = {}
+    consensus, dispersion = {}, {}
     for _ in range(max(1, iterations)):
-        # E-step: log-odds weighted consensus (Dawid-Skene): an annotator whose
-        # reliability is below 0.5 has their vote count AGAINST their choice.
         for pair, vs in votes.items():
-            z = 0.0
-            for label, user in vs:
-                r = min(0.95, max(0.05, reliability[user]))
-                z += math.log(r / (1 - r)) * (1 if label == "must" else -1)
-            p_must = 1.0 / (1.0 + math.exp(-z))
-            if abs(p_must - 0.5) < 1e-9:
-                majority[pair] = (None, 0.5)
-            else:
-                lab = "must" if p_must > 0.5 else "cannot"
-                majority[pair] = (lab, max(p_must, 1 - p_must))
-        # M-step: annotator reliability = smoothed agreement with majorities
-        agree = defaultdict(float)
-        count = defaultdict(float)
+            wsum = vsum = 0.0
+            for sc, user in vs:
+                w = max(0.05, reliability[user])
+                wsum += w; vsum += w * sc
+            m = vsum / wsum
+            d = (sum(max(0.05, reliability[u]) * (sc - m) ** 2 for sc, u in vs) / wsum) ** 0.5
+            consensus[pair], dispersion[pair] = m, d
+        agree = defaultdict(float); count = defaultdict(float)
         for pair, vs in votes.items():
-            lab, _ = majority[pair]
-            if lab is None:
-                continue
-            for label, user in vs:
+            m = consensus[pair]
+            for sc, user in vs:
                 count[user] += 1.0
-                if label == lab:
-                    agree[user] += 1.0
+                agree[user] += max(0.0, 1.0 - abs(sc - m) / HALF)
         for user in count:
             reliability[user] = ((agree[user] + PRIOR_CORRECT * PRIOR_WEIGHT)
                                  / (count[user] + PRIOR_WEIGHT))
 
     pairs = []
     for pair, vs in sorted(votes.items()):
-        lab, conf = majority[pair]
-        n_must = sum(1 for l, _ in vs if l == "must")
-        n_cannot = len(vs) - n_must
-        raw_agreement = max(n_must, n_cannot) / len(vs)
+        m, d = consensus[pair], dispersion[pair]
+        label = "must" if m >= 2.5 else ("cannot" if m <= 1.5 else None)
+        conf = max(0.0, 1.0 - d / 5.0)          # d=0 -> 1; full-range split -> 0.5
+        n_must = sum(1 for sc, _ in vs if sc >= 3)
+        n_cannot = sum(1 for sc, _ in vs if sc <= 1)
+        raw_agreement = max(n_must, n_cannot, len(vs) - n_must - n_cannot) / len(vs)
         pairs.append({
             "a_id": pair[0], "b_id": pair[1],
-            "label": lab, "n": len(vs),
+            "consensus_score": round(m, 3),
+            "label": label, "n": len(vs),
             "votes_must": n_must, "votes_cannot": n_cannot,
             "agreement": round(raw_agreement, 4),
             "confidence": round(conf, 4),
-            "disputed": lab is None or conf < DISPUTED_BELOW,
+            "disputed": conf < DISPUTED_BELOW,
         })
     annotators = {u: {"n": int(count.get(u, 0)), "reliability": round(reliability[u], 4)}
                   for u in ({user for _, user in sum(votes.values(), [])})}

@@ -4,6 +4,20 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.11 — 2026-07-21
+- **Ordinal consensus engine**: aggregation now works natively on the Pelican scale —
+  reliability-weighted consensus scores, ordinal annotator reliability (closeness, not
+  binary match), theme-zone votes finally count, disputes from dispersion. Synthetic
+  validation improves further (2-inverters scenario 0.54 → 0.86 accuracy). Live data:
+  204 consensus pairs now yield 45 must + 140 cannot constraints (was 15/35).
+- **Human check** ("finish the proverb"): judging requires a one-time human verification
+  with a rotating classic-proverb completion; 7-day tokens; friendly modal.
+- **Hardened onboarding**: /api/config drives required-field gating (name ≥2 chars,
+  access code when configured) with clear messages; graceful 401/403/429 handling;
+  wrong-code brute-force limiter (20/h/client); proxy-aware rate-limit keys
+  (X-Forwarded-For) so per-user limits work correctly behind Caddy.
+- **Landing page** (`landing/`) for the public domain root.
+
 ## v19.10 — 2026-07-21
 - **Stratified pair serving** (Pelican revision): candidate pairs are bucketed by
   language-family match x region match x similarity band and served round-robin, so the

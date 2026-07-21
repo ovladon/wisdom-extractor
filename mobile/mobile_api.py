@@ -8,7 +8,7 @@ Run:  uvicorn mobile.mobile_api:app --host 0.0.0.0 --port 8600
 Env:  WISDOM_DB_PATH   shared database (same as the Streamlit apps)
       ANNOTATOR_CODE   optional access code (same semantics as the portal)
 """
-import os, random, sys, threading, time
+import os, random, secrets, sys, threading, time
 from collections import defaultdict, deque
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
@@ -29,8 +29,43 @@ CODE = os.environ.get("ANNOTATOR_CODE", "")
 RATE_WINDOW = 60          # seconds
 RATE_MAX = 90             # requests per window per client (fast annotators stay well under)
 EXCLUDE_DAILY_MAX = 30    # "not a saying" reports per user per day
+BAD_CODE_MAX = 20         # wrong access-code attempts per client per hour
 _hits = defaultdict(deque)
 _excludes = defaultdict(deque)
+_bad_codes = defaultdict(deque)
+
+# --- human check: finish the proverb ---
+HUMAN_CHALLENGES = [
+    ("An apple does not fall far from the ____.", "tree"),
+    ("Where there is smoke, there is ____.", "fire"),
+    ("Strike while the iron is ____.", "hot"),
+    ("Better late than ____.", "never"),
+    ("Actions speak louder than ____.", "words"),
+    ("Don't count your chickens before they ____.", "hatch"),
+    ("The early bird catches the ____.", "worm"),
+    ("When in Rome, do as the Romans ____.", "do"),
+    ("A bird in the hand is worth two in the ____.", "bush"),
+    ("Practice makes ____.", "perfect"),
+    ("Too many cooks spoil the ____.", "broth"),
+    ("Look before you ____.", "leap"),
+]
+_pending_challenges = {}   # cid -> (answer, expiry)
+_human_tokens = {}         # token -> expiry
+HUMAN_TOKEN_TTL = 7 * 86400
+
+
+def _client_key(request):
+    # behind Caddy/any proxy the peer is the proxy; trust the first X-Forwarded-For hop
+    fwd = request.headers.get("x-forwarded-for", "")
+    if fwd:
+        return fwd.split(",")[0].strip()
+    return request.client.host if request.client else "?"
+
+
+def _prune(d):
+    now = time.time()
+    for k in [k for k, exp in d.items() if exp < now]:
+        d.pop(k, None)
 
 
 def _rate_check(key):
@@ -82,7 +117,23 @@ def _stratum(a, b, sim):
 def _check_code(code, request=None):
     supplied = code or (request.headers.get("x-access-code", "") if request is not None else "")
     if CODE and supplied != CODE:
+        if request is not None:
+            key = _client_key(request)
+            now = time.time()
+            q = _bad_codes[key]
+            while q and now - q[0] > 3600:
+                q.popleft()
+            q.append(now)
+            if len(q) > BAD_CODE_MAX:
+                raise HTTPException(429, "too many wrong codes — try again later")
         raise HTTPException(401, "wrong access code")
+
+
+def _check_human(request):
+    tok = request.headers.get("x-human", "")
+    _prune(_human_tokens)
+    if tok not in _human_tokens:
+        raise HTTPException(403, "human check required")
 
 
 def _ensure_pool():
@@ -124,10 +175,48 @@ def manifest():
     return FileResponse(os.path.join(HERE, "manifest.json"))
 
 
+@app.get("/api/config")
+def config(request: Request):
+    _rate_check(_client_key(request))
+    s = stats()
+    return {"code_required": bool(CODE),
+            "corpus": {"proverbs": s["proverbs"], "peoples": s["peoples"],
+                       "judgments": s["must"] + s["cannot"]}}
+
+
+@app.get("/api/human")
+def human_challenge(request: Request):
+    _rate_check(_client_key(request))
+    cid = secrets.token_urlsafe(8)
+    prompt, answer = random.choice(HUMAN_CHALLENGES)
+    _pending_challenges[cid] = (answer, time.time() + 600)
+    if len(_pending_challenges) > 5000:
+        _prune({k: v[1] for k, v in _pending_challenges.items()})
+    return {"challenge_id": cid, "prompt": prompt}
+
+
+class HumanAnswer(BaseModel):
+    challenge_id: str
+    answer: str
+
+
+@app.post("/api/human")
+def human_verify(h: HumanAnswer, request: Request):
+    _rate_check(_client_key(request))
+    entry = _pending_challenges.pop(h.challenge_id, None)
+    if not entry or entry[1] < time.time():
+        raise HTTPException(400, "challenge expired — try again")
+    if h.answer.strip().lower() != entry[0]:
+        raise HTTPException(400, "not quite — try another one")
+    tok = secrets.token_urlsafe(24)
+    _human_tokens[tok] = time.time() + HUMAN_TOKEN_TTL
+    return {"token": tok}
+
+
 @app.get("/api/pair")
 def get_pair(request: Request, strategy: str = "uncertain", code: str = ""):
     _check_code(code, request)
-    _rate_check(request.client.host if request.client else "?")
+    _rate_check(_client_key(request))
     _ensure_pool()
     if strategy == "disputed":
         agg, _ = aggregate_constraints(list_constraints())
@@ -165,8 +254,11 @@ class Judgment(BaseModel):
 @app.post("/api/judge")
 def judge(j: Judgment, request: Request):
     _check_code(j.code, request)
-    _rate_check(request.client.host if request.client else "?")
-    user = (j.user or "(anon)").strip()[:40]
+    _rate_check(_client_key(request))
+    _check_human(request)
+    user = (j.user or "").strip()[:40]
+    if len(user) < 2:
+        raise HTTPException(400, "please set a name (2+ characters)")
     if j.score is not None:
         if j.score not in (4, 3, 2, 1, 0, -1):
             raise HTTPException(400, "bad score")
@@ -189,7 +281,7 @@ def judge(j: Judgment, request: Request):
 @app.get("/api/me")
 def me(request: Request, user: str, code: str = ""):
     _check_code(code, request)
-    _rate_check(request.client.host if request.client else "?")
+    _rate_check(_client_key(request))
     user = user.strip()[:40]
     board = leaderboard()
     rank = next((i + 1 for i, r in enumerate(board) if r["user"] == user), None)
