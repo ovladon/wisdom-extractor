@@ -40,20 +40,23 @@ def aggregate_constraints(constraints, iterations=3):
             continue
         votes[_pair_key(int(c["a_id"]), int(c["b_id"]))].append((label, c.get("user") or "(anon)"))
 
+    import math
     reliability = defaultdict(lambda: PRIOR_CORRECT)
     majority = {}
     for _ in range(max(1, iterations)):
-        # E-step: reliability-weighted majority per pair
+        # E-step: log-odds weighted consensus (Dawid-Skene): an annotator whose
+        # reliability is below 0.5 has their vote count AGAINST their choice.
         for pair, vs in votes.items():
-            w = {"must": 0.0, "cannot": 0.0}
+            z = 0.0
             for label, user in vs:
-                w[label] += reliability[user]
-            total = w["must"] + w["cannot"]
-            if total <= 0 or w["must"] == w["cannot"]:
+                r = min(0.95, max(0.05, reliability[user]))
+                z += math.log(r / (1 - r)) * (1 if label == "must" else -1)
+            p_must = 1.0 / (1.0 + math.exp(-z))
+            if abs(p_must - 0.5) < 1e-9:
                 majority[pair] = (None, 0.5)
             else:
-                lab = "must" if w["must"] > w["cannot"] else "cannot"
-                majority[pair] = (lab, w[lab] / total)
+                lab = "must" if p_must > 0.5 else "cannot"
+                majority[pair] = (lab, max(p_must, 1 - p_must))
         # M-step: annotator reliability = smoothed agreement with majorities
         agree = defaultdict(float)
         count = defaultdict(float)

@@ -64,9 +64,19 @@ async def security_headers(request, call_next):
     resp.headers["X-Frame-Options"] = "DENY"
     return resp
 
-_pool = {"pairs": [], "by_id": {}, "built": 0.0}
+_pool = {"pairs": [], "by_id": {}, "built": 0.0, "strata": {}, "cycle": 0}
 _lock = threading.Lock()
 POOL_TTL = 1800  # rebuild candidate pool every 30 min
+
+
+def _stratum(a, b, sim):
+    """Annotation stratum (Pelican protocol): family x region x similarity band."""
+    fa, fb = a.get("family"), b.get("family")
+    ra, rb = a.get("region"), b.get("region")
+    fam = "fam?" if not (fa and fb) else ("fam=" if fa == fb else "fam!")
+    reg = "reg?" if not (ra and rb) else ("reg=" if ra == rb else "reg!")
+    band = "hi" if sim >= 0.5 else "lo"
+    return f"{fam}|{reg}|{band}"
 
 
 def _check_code(code, request=None):
@@ -85,7 +95,13 @@ def _ensure_pool():
         sample = random.sample(rows, min(2500, len(rows)))
         pos, neg = nearest_pairs([r["text"] for r in sample],
                                  [r["id"] for r in sample], k=6, hi=0.85, lo=0.30)
-        _pool.update({"pairs": pos + neg, "by_id": by_id, "built": time.time()})
+        strata = {}
+        for pa, pb, sim in pos + neg:
+            a, b = by_id.get(pa), by_id.get(pb)
+            if a and b:
+                strata.setdefault(_stratum(a, b, sim), []).append((pa, pb, sim))
+        _pool.update({"pairs": pos + neg, "by_id": by_id, "built": time.time(),
+                      "strata": strata, "cycle": 0})
 
 
 def _item(pid):
@@ -122,11 +138,17 @@ def get_pair(request: Request, strategy: str = "uncertain", code: str = ""):
             a, b = _item(p["a_id"]), _item(p["b_id"])
             if a and b:
                 return {"a": a, "b": b, "strategy": "disputed"}
-    if strategy in ("uncertain", "disputed") and _pool["pairs"]:
-        pa, pb, _ = random.choice(_pool["pairs"])
-        a, b = _item(pa), _item(pb)
-        if a and b:
-            return {"a": a, "b": b, "strategy": "uncertain"}
+    if strategy in ("uncertain", "disputed") and _pool["strata"]:
+        keys = sorted(_pool["strata"])
+        for _try in range(len(keys)):
+            key = keys[_pool["cycle"] % len(keys)]
+            _pool["cycle"] += 1
+            bucket = _pool["strata"].get(key) or []
+            if bucket:
+                pa, pb, _sim = random.choice(bucket)
+                a, b = _item(pa), _item(pb)
+                if a and b:
+                    return {"a": a, "b": b, "strategy": f"stratified:{key}"}
     ids = random.sample(list(_pool["by_id"]), 2)
     return {"a": _item(ids[0]), "b": _item(ids[1]), "strategy": "random"}
 

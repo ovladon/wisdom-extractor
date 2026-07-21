@@ -4,6 +4,21 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.10 — 2026-07-21
+- **Stratified pair serving** (Pelican revision): candidate pairs are bucketed by
+  language-family match x region match x similarity band and served round-robin, so the
+  growing annotation set is balanced across strata.
+- **Log-odds consensus** (Dawid-Skene weighting): identified low-reliability annotators'
+  votes now count against their choice; synthetic adversarial validation shows +0.18
+  consensus-accuracy gain with an inverter present and clean honest/adversary
+  reliability separation (`scripts/reliability_validation.py`).
+- **Revision instruments**: `scripts/iaa_report.py` (raw/binarized agreement, ordinal
+  Krippendorff alpha, weighted Cohen kappa, disagreement-examples table by boundary
+  category), `scripts/baseline_embeddings.py` (char n-gram vs multilingual
+  sentence-embedding AUC on annotated pairs), `scripts/audit_samples.py`
+  (canonicalisation & cluster-quality human-audit CSV generators + summarizer).
+- requirements: sentence-transformers/torch optional (baseline script only).
+
 ## v19.9 — 2026-07-19
 - **API hardening**: per-client rate limiting (90 req/min), daily cap on
   "not a saying" exclusions (30/user/day), access code accepted via `X-Access-Code`
