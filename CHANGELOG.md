@@ -4,6 +4,13 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.15 — 2026-07-21
+- **Human check made legible**: full "Step 2 of 2" welcome card explaining WHY the
+  proverbs haven't loaded yet (bot protection, one-time, device trusted a week), visible
+  loading/failure states, always-available "get a different proverb" retry, Enter-to-
+  submit, autofocus; mid-game re-checks announce themselves with a toast; and a failed
+  pair fetch now shows tap-to-retry instead of a silent "…".
+
 ## v19.14 — 2026-07-21
 - **Public living map**: `/map` on the annotate service — no access code, regenerated
   from the database every 6 hours, with a freshness header (sayings/peoples/judgments/

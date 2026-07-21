@@ -155,12 +155,18 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
 </div>
 
 <div id="humanModal" class="panel hidden">
-  <h2>One quick check 🌱</h2>
-  <p>Prove you're human the Wisdom Lab way — finish the proverb:</p>
-  <p class="saying" id="humanPrompt" style="font-size:18px">…</p>
-  <input id="humanAnswer" placeholder="the missing word" autocomplete="off" autocapitalize="none">
+  <p style="color:var(--ink3);font-size:12px;letter-spacing:.1em;text-transform:uppercase;margin:0 0 6px">Step 2 of 2 · almost in</p>
+  <h2>Prove you're human — the Wisdom Lab way 🌱</h2>
+  <p>Before your proverbs load, finish one classic saying. This keeps bots out of the
+  science — and it's the only time we'll ask (this device stays trusted for a week).</p>
+  <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin:14px 0 10px">
+    <p class="saying" id="humanPrompt" style="font-size:19px;margin:0">Fetching your proverb…</p>
+  </div>
+  <input id="humanAnswer" placeholder="type the missing word" autocomplete="off" autocapitalize="none" enterkeyhint="done">
   <p id="humanMsg" style="color:var(--diff);font-size:13px;min-height:18px;margin:0 0 8px"></p>
-  <button onclick="submitHuman()">That's my answer</button>
+  <button onclick="submitHuman()">That's my answer → show me the proverbs</button>
+  <p style="text-align:center;margin:10px 0 0"><a href="#" onclick="showHuman();return false"
+     style="color:var(--accent);font-size:13px">Don't know this one? Get a different proverb</a></p>
 </div>
 
 <div class="toast" id="toast"></div>
@@ -184,7 +190,8 @@ async function api(path,opts){
     $("setupMsg").textContent="That access code isn't right — check the one you received.";
     return null;
   }
-  if(r.status===403){human="";localStorage.removeItem("wl_human");showHuman();return null;}
+  if(r.status===403){human="";localStorage.removeItem("wl_human");
+    toast("Quick human re-check 🌱");showHuman();return null;}
   if(r.status===429){toast("Easy there — a short pause, then continue 🙂");return null;}
   if(!r.ok){toast("Connection hiccup — try again");return null;}
   return r.json();
@@ -193,9 +200,18 @@ async function api(path,opts){
 async function showHuman(){
   $("game").classList.add("hidden");$("setup").classList.add("hidden");
   $("humanModal").classList.remove("hidden");
+  $("humanPrompt").textContent="Fetching your proverb…";$("humanMsg").textContent="";
   const d=await api("/api/human");
-  if(d){challengeId=d.challenge_id;$("humanPrompt").textContent=d.prompt;$("humanAnswer").value="";}
+  if(d){
+    challengeId=d.challenge_id;$("humanPrompt").textContent=d.prompt;
+    $("humanAnswer").value="";$("humanAnswer").focus();
+  }else{
+    $("humanPrompt").textContent="Couldn't fetch a proverb — tap 'Get a different proverb' below to retry.";
+  }
 }
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&!$("humanModal").classList.contains("hidden"))submitHuman();
+});
 
 async function submitHuman(){
   const ans=$("humanAnswer").value.trim();
@@ -208,9 +224,10 @@ async function submitHuman(){
     toast("Welcome, human 🌿");
     if(!pair)nextPair();
   }else{
-    $("humanMsg").textContent="Not quite — here's another:";
+    $("humanMsg").textContent="Not quite — try this one instead:";
     const d=await api("/api/human");
-    if(d){challengeId=d.challenge_id;$("humanPrompt").textContent=d.prompt;$("humanAnswer").value="";}
+    if(d){challengeId=d.challenge_id;$("humanPrompt").textContent=d.prompt;
+          $("humanAnswer").value="";$("humanAnswer").focus();}
   }
 }
 
@@ -218,7 +235,14 @@ async function nextPair(){
   // alternate strategies to keep it fresh: mostly uncertain, sometimes disputed
   strategy=(session%7===6)?"disputed":"uncertain";
   const d=await api(`/api/pair?strategy=${strategy}`);
-  if(!d)return;
+  if(!d){
+    $("textA").textContent="Couldn't load a pair — tap here to retry 🔁";
+    $("origA").style.display="none";$("whoA").textContent="";
+    $("textB").textContent="";$("origB").style.display="none";$("whoB").textContent="";
+    $("card").onclick=()=>{$("card").onclick=null;nextPair();};
+    return;
+  }
+  $("card").onclick=null;
   pair=d;
   $("levels").classList.add("hidden");
   $("textA").textContent=d.a.gloss; $("whoA").textContent=d.a.people;
