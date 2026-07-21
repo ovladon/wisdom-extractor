@@ -18,7 +18,8 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from core.persistence import (init_db, list_proverbs, add_constraint, mark_excluded,
-                              list_constraints, stats, leaderboard, backfill_glosses)
+                              list_constraints, stats, leaderboard, backfill_glosses,
+                              annotator_uid)
 from core.annotation_quality import aggregate_constraints, pairs_needing_review
 from core.clustering import nearest_pairs
 
@@ -261,9 +262,10 @@ def judge(j: Judgment, request: Request):
     _check_code(j.code, request)
     _rate_check(_client_key(request))
     _check_human(request)
-    user = (j.user or "").strip()[:40]
-    if len(user) < 2:
+    nick = (j.user or "").strip()[:40]
+    if len(nick) < 2:
         raise HTTPException(400, "please set a name (2+ characters)")
+    user = annotator_uid(nick)   # science sees only the pseudonym
     if j.score is not None:
         if j.score not in (4, 3, 2, 1, 0, -1):
             raise HTTPException(400, "bad score")
@@ -287,12 +289,12 @@ def judge(j: Judgment, request: Request):
 def me(request: Request, user: str, code: str = ""):
     _check_code(code, request)
     _rate_check(_client_key(request))
-    user = user.strip()[:40]
+    nick = user.strip()[:40]
     board = leaderboard()
-    rank = next((i + 1 for i, r in enumerate(board) if r["user"] == user), None)
-    mine = next((r for r in board if r["user"] == user), None)
+    rank = next((i + 1 for i, r in enumerate(board) if r["user"] == nick), None)
+    mine = next((r for r in board if r["user"] == nick), None)
     _, annotators = aggregate_constraints(list_constraints())
-    rel = annotators.get(user, {}).get("reliability")
+    rel = annotators.get(annotator_uid(nick), {}).get("reliability")
     s = stats()
     return {"total": (mine or {}).get("total", 0), "rank": rank,
             "reliability": rel, "leaderboard": board[:10],

@@ -15,7 +15,7 @@ import streamlit as st
 
 from core.persistence import (
     init_db, list_proverbs, mark_excluded, add_constraint, list_constraints,
-    stats, leaderboard, backfill_glosses,
+    stats, leaderboard, backfill_glosses, annotator_uid,
 )
 from core.annotation_quality import aggregate_constraints, pairs_needing_review
 from core.clustering import nearest_pairs
@@ -118,7 +118,7 @@ with tab_play:
     st.markdown("**How are these two sayings related?** (judge the lesson, not the imagery)")
 
     def _grade(v):
-        add_constraint(int(ra["id"]), int(rb["id"]), None, user, score=v)
+        add_constraint(int(ra["id"]), int(rb["id"]), None, annotator_uid(user), score=v)
         st.session_state["pair"] = pick_pair()
         st.session_state["done"] = st.session_state.get("done", 0) + 1
         st.rerun()

@@ -4,6 +4,14 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.13 — 2026-07-21
+- **Nicknames are display-only.** New `annotators` table maps each nickname to a random
+  pseudonym (`u_xxxxxxxx`); all judgments, reliability computations, consensus, exports,
+  and analysis pipelines see only the pseudonym. Nicknames exist solely to render the
+  leaderboard and never leave the server. Existing databases migrate automatically and
+  idempotently on start. Erasing someone's nickname is a one-row deletion that leaves
+  the science untouched.
+
 ## v19.12 — 2026-07-21
 - **Privacy**: /privacy notice (controller, data, purpose, anonymized publication,
   rights, netcup DPA); consent line + privacy link on the annotator setup screen and

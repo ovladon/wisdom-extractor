@@ -20,7 +20,7 @@ from core.persistence import (
     list_proverbs, mark_excluded, bulk_mark_excluded, save_claims, save_clusters,
     add_constraint, bulk_apply, list_constraints, stats, leaderboard,
     export_annotations, backfill_people_from_urls, enrich_family_region,
-    infer_people_from_url, backfill_attestation_years,
+    infer_people_from_url, backfill_attestation_years, annotator_uid,
 )
 from core.cleaner import keep, quality_score, strip_citations, extract_attestation_year
 from core.canonicalize import canonicalize
@@ -393,7 +393,7 @@ with tabs[5]:
 
         def constrain_score(v):
             # graded judgments write immediately (batch queue predates the graded scheme)
-            add_constraint(int(ra["id"]), int(rb["id"]), None, user, score=v)
+            add_constraint(int(ra["id"]), int(rb["id"]), None, annotator_uid(user), score=v)
             bump()
             st.session_state["pair"] = pick_pair()
 

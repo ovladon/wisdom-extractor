@@ -55,6 +55,11 @@ def init_db():
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       username TEXT UNIQUE, created_at REAL
     );
+    CREATE TABLE IF NOT EXISTS annotators(
+      uid TEXT PRIMARY KEY,          -- random pseudonym used in ALL science/exports
+      nickname TEXT UNIQUE,          -- display-only (leaderboard); never exported
+      created_at REAL
+    );
     """)
     # migrate: add any missing proverb columns (upgrades v15-v18 databases in place)
     cur.execute("PRAGMA table_info(proverbs)")
@@ -66,12 +71,52 @@ def init_db():
     cur.execute("PRAGMA table_info(constraints)")
     if "score" not in {r[1] for r in cur.fetchall()}:
         cur.execute("ALTER TABLE constraints ADD COLUMN score INTEGER")
+    _pseudonymize_legacy_users(cur)
     cur.executescript("""
     CREATE INDEX IF NOT EXISTS idx_proverbs_excluded ON proverbs(excluded);
     CREATE INDEX IF NOT EXISTS idx_proverbs_people ON proverbs(people);
     CREATE INDEX IF NOT EXISTS idx_proverbs_cluster ON proverbs(cluster_id);
     """)
     con.commit(); con.close()
+
+
+def _pseudonymize_legacy_users(cur):
+    """One-time, idempotent: convert plain nicknames in constraints.user to uids."""
+    import secrets
+    cur.execute("SELECT DISTINCT user FROM constraints WHERE user IS NOT NULL AND user NOT LIKE 'u\_%' ESCAPE '\\'")
+    for (nick,) in cur.fetchall():
+        cur.execute("SELECT uid FROM annotators WHERE nickname=?", (nick,))
+        row = cur.fetchone()
+        uid = row[0] if row else "u_" + secrets.token_hex(4)
+        if not row:
+            cur.execute("INSERT OR IGNORE INTO annotators(uid,nickname,created_at) VALUES(?,?,?)",
+                        (uid, nick, time.time()))
+        cur.execute("UPDATE constraints SET user=? WHERE user=?", (uid, nick))
+
+
+def annotator_uid(nickname):
+    """Stable random pseudonym for a display nickname (created on first use)."""
+    import secrets
+    nickname = (nickname or "(anon)").strip()[:40]
+    con = connect(); cur = con.cursor()
+    cur.execute("SELECT uid FROM annotators WHERE nickname=?", (nickname,))
+    row = cur.fetchone()
+    if row:
+        uid = row[0]
+    else:
+        uid = "u_" + secrets.token_hex(4)
+        cur.execute("INSERT INTO annotators(uid,nickname,created_at) VALUES(?,?,?)",
+                    (uid, nickname, time.time()))
+        con.commit()
+    con.close()
+    return uid
+
+
+def nickname_of(uid):
+    con = connect(); cur = con.cursor()
+    cur.execute("SELECT nickname FROM annotators WHERE uid=?", (uid,))
+    row = cur.fetchone(); con.close()
+    return row[0] if row else uid
 
 
 def _hash_text(t):
@@ -354,11 +399,12 @@ def stats():
 
 def leaderboard(top=50):
     con = connect(); cur = con.cursor()
-    cur.execute("""SELECT user,
-                          SUM(CASE WHEN label='must' THEN 1 ELSE 0 END),
-                          SUM(CASE WHEN label='cannot' THEN 1 ELSE 0 END),
+    cur.execute("""SELECT COALESCE(a.nickname, c.user),
+                          SUM(CASE WHEN c.label='must' THEN 1 ELSE 0 END),
+                          SUM(CASE WHEN c.label='cannot' THEN 1 ELSE 0 END),
                           COUNT(*)
-                   FROM constraints GROUP BY user ORDER BY 4 DESC LIMIT ?""", (top,))
+                   FROM constraints c LEFT JOIN annotators a ON a.uid = c.user
+                   GROUP BY c.user ORDER BY 4 DESC LIMIT ?""", (top,))
     rows = cur.fetchall(); con.close()
     return [{"user": r[0] or "(anon)", "must": r[1], "cannot": r[2], "total": r[3]} for r in rows]
 
