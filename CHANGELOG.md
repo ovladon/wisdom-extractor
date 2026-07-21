@@ -4,6 +4,11 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.12 — 2026-07-21
+- **Privacy**: /privacy notice (controller, data, purpose, anonymized publication,
+  rights, netcup DPA); consent line + privacy link on the annotator setup screen and
+  landing footer; name field now nudges toward nicknames.
+
 ## v19.11 — 2026-07-21
 - **Ordinal consensus engine**: aggregation now works natively on the Pelican scale —
   reliability-weighted consensus scores, ordinal annotator reliability (closeness, not

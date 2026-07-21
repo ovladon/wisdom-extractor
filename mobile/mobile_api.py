@@ -175,6 +175,11 @@ def manifest():
     return FileResponse(os.path.join(HERE, "manifest.json"))
 
 
+@app.get("/privacy")
+def privacy():
+    return FileResponse(os.path.join(HERE, "privacy.html"))
+
+
 @app.get("/api/config")
 def config(request: Request):
     _rate_check(_client_key(request))
