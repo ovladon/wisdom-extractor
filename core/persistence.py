@@ -364,6 +364,44 @@ def add_duplicate_report(a_id, b_id, user):
     con.commit(); con.close()
 
 
+def merge_reported_duplicates(min_reporters=2, sim_threshold=0.85):
+    """Merge human-reported exact duplicates as attestations of one saying.
+
+    Guards: only same-people pairs (identical text from two DIFFERENT peoples is a
+    cross-cultural datum, never merged); a single reporter is trusted only when the
+    texts really are near-identical (difflib >= sim_threshold), two+ reporters always.
+    The keeper inherits the earliest attestation year (first_seen); the twin is excluded.
+    Idempotent; returns number of merges performed.
+    """
+    from difflib import SequenceMatcher
+    merged = 0
+    con = connect(); con.row_factory = __import__("sqlite3").Row
+    for rep in list_duplicate_reports():
+        rows = {r["id"]: dict(r) for r in con.execute(
+            "SELECT id, text, people, first_seen, excluded FROM proverbs WHERE id IN (?,?)",
+            (rep["a_id"], rep["b_id"]))}
+        if len(rows) != 2:
+            continue
+        a, b = rows[rep["a_id"]], rows[rep["b_id"]]
+        if a["excluded"] or b["excluded"]:
+            continue
+        pa, pb = (a.get("people") or ""), (b.get("people") or "")
+        if pa and pb and pa != pb:
+            continue
+        sim = SequenceMatcher(None, a["text"].lower(), b["text"].lower()).ratio()
+        if rep["reporters"] < min_reporters and sim < sim_threshold:
+            continue
+        ya, yb = a.get("first_seen"), b.get("first_seen")
+        keeper, twin = (a, b) if (ya or 9999, a["id"]) <= (yb or 9999, b["id"]) else (b, a)
+        year = min([y for y in (ya, yb) if y], default=None)
+        con.execute("UPDATE proverbs SET first_seen=COALESCE(?, first_seen) WHERE id=?",
+                    (year, keeper["id"]))
+        con.execute("UPDATE proverbs SET excluded=1 WHERE id=?", (twin["id"],))
+        merged += 1
+    con.commit(); con.close()
+    return merged
+
+
 def list_duplicate_reports():
     con = connect(); con.row_factory = __import__("sqlite3").Row
     rows = [dict(r) for r in con.execute(

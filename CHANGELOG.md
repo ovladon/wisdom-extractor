@@ -4,6 +4,14 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.18 — 2026-07-21
+- **Duplicate reports now feed the pipeline**: each maintenance cycle merges
+  human-reported exact duplicates as attestations of one saying (keeper inherits the
+  earliest first_seen year; the twin is excluded). Guards: cross-people twins are
+  never merged (that's cross-cultural evidence), single-reporter merges require
+  near-identical text (difflib >= 0.85), two+ reporters always merge. Idempotent;
+  digest reports duplicates_merged.
+
 ## v19.17 — 2026-07-21
 - **"Exact duplicate" option** at the top of the Related… levels: annotators can flag
   word-for-word twins (common across overlapping collections). Stored as a maximal

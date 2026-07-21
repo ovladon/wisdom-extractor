@@ -30,6 +30,7 @@ from core.cleaner import keep, quality_score, strip_citations, extract_attestati
 from core.canonicalize import canonicalize
 from core.clustering import cluster_texts
 from core.annotation_quality import aggregate_constraints, constraint_pairs_for_clustering
+from core.persistence import merge_reported_duplicates
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 
@@ -113,6 +114,8 @@ def main():
     summary["canonicalized_new"] = len(missing)
 
     cons = list_constraints()
+    summary["duplicates_merged"] = merge_reported_duplicates()
+
     agg_pairs, annotators = aggregate_constraints(cons)
     must, cannot = constraint_pairs_for_clustering(agg_pairs, min_confidence=args.min_conf)
     summary["annotations"] = {"raw": len(cons), "consensus_pairs": len(agg_pairs),
