@@ -113,6 +113,7 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
     <button id="bSame" onclick="showLevels()">🔗 Related…</button>
   </div>
   <div id="levels" class="levels hidden">
+    <button onclick="score(5)"><b>Exact duplicate</b><span>the very same saying, word for word</span></button>
     <button onclick="score(4)"><b>Same rule</b><span>explaining one explains the other</span></button>
     <button onclick="score(3)"><b>Same advice</b><span>different image, same recommendation</span></button>
     <button onclick="score(2)"><b>Same theme</b><span>same topic, different lesson possible</span></button>
@@ -128,6 +129,7 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
   <div class="swipetip"><a href="#" onclick="toggleGuide();return false" style="color:var(--accent)">ⓘ How to judge — the 6 levels</a></div>
   <div id="guide" class="guide hidden">
     <p><b>Judge the idea, not the imagery.</b> First ask: what practical lesson does each saying teach?</p>
+    <p>👯 <b>Exact duplicate</b> — both fields show the very same proverb, word for word (or trivially so: spelling/punctuation). <i>Happens when two collections recorded the same saying.</i></p>
     <p>🎯 <b>Same rule</b> — same rule or conclusion; only the wording differs. <i>Test: explaining one gives almost exactly the explanation of the other.</i></p>
     <p>🤝 <b>Same advice</b> — different metaphor, same practical recommendation. <i>Test: I'd use either to advise someone in the same situation.</i></p>
     <p>🧩 <b>Same theme</b> — same general topic, but not necessarily the same lesson. <i>Test: they answer the same general problem.</i></p>

@@ -60,6 +60,10 @@ def init_db():
       nickname TEXT UNIQUE,          -- display-only (leaderboard); never exported
       created_at REAL
     );
+    CREATE TABLE IF NOT EXISTS duplicate_reports(
+      a_id INTEGER, b_id INTEGER, user TEXT, created_at REAL,
+      UNIQUE(a_id, b_id, user)
+    );
     """)
     # migrate: add any missing proverb columns (upgrades v15-v18 databases in place)
     cur.execute("PRAGMA table_info(proverbs)")
@@ -349,6 +353,25 @@ def enrich_family_region(metadata_csv):
 SCORE_TO_LABEL = {4: "must", 3: "must", 2: "theme", 1: "cannot", 0: "cannot", -1: "cannot"}
 
 
+def add_duplicate_report(a_id, b_id, user):
+    """Human-verified word-for-word duplicate: feeds dedup/attestation merging,
+    kept OUTSIDE the graded scale so IAA statistics stay on the -1..4 levels."""
+    import time as _t
+    a, b = (a_id, b_id) if a_id < b_id else (b_id, a_id)
+    con = connect()
+    con.execute("INSERT OR IGNORE INTO duplicate_reports(a_id,b_id,user,created_at) "
+                "VALUES(?,?,?,?)", (a, b, user, _t.time()))
+    con.commit(); con.close()
+
+
+def list_duplicate_reports():
+    con = connect(); con.row_factory = __import__("sqlite3").Row
+    rows = [dict(r) for r in con.execute(
+        "SELECT a_id, b_id, COUNT(DISTINCT user) AS reporters FROM duplicate_reports "
+        "GROUP BY a_id, b_id ORDER BY reporters DESC")]
+    con.close(); return rows
+
+
 def add_constraint(a_id, b_id, label, user, score=None):
     if score is not None and label is None:
         label = SCORE_TO_LABEL.get(int(score), "theme")
@@ -391,6 +414,7 @@ def stats():
         ("peoples", "SELECT COUNT(DISTINCT people) FROM proverbs WHERE excluded=0 AND people IS NOT NULL"),
         ("must", "SELECT COUNT(*) FROM constraints WHERE label='must'"),
         ("cannot", "SELECT COUNT(*) FROM constraints WHERE label='cannot'"),
+        ("duplicate_reports", "SELECT COUNT(*) FROM duplicate_reports"),
     ]:
         cur.execute(q); out[key] = cur.fetchone()[0]
     con.close()

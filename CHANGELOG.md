@@ -4,6 +4,14 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.17 — 2026-07-21
+- **"Exact duplicate" option** at the top of the Related… levels: annotators can flag
+  word-for-word twins (common across overlapping collections). Stored as a maximal
+  same-rule judgment (4) for clustering PLUS a row in the new `duplicate_reports`
+  table (pair-normalized, unique per user) — a human-verified dedup/attestation-merge
+  list that leaves the -1..4 IAA scale untouched. Guide entry added; stats() now
+  reports duplicate_reports.
+
 ## v19.16 — 2026-07-21
 - **Fix: the game screen truly hides now.** An inline display:flex on the game panel
   overrode the .hidden class since v19.5, so the empty proverb card and buttons stayed

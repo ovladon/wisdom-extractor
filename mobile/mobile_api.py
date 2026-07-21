@@ -17,7 +17,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
-from core.persistence import (init_db, list_proverbs, add_constraint, mark_excluded,
+from core.persistence import (init_db, list_proverbs, add_constraint, add_duplicate_report,
+                              mark_excluded,
                               list_constraints, stats, leaderboard, backfill_glosses,
                               annotator_uid)
 from core.annotation_quality import aggregate_constraints, pairs_needing_review
@@ -282,7 +283,7 @@ class Judgment(BaseModel):
     a_id: int
     b_id: int
     label: str = ""   # exclude_a | exclude_b | (legacy: must | cannot)
-    score: int | None = None   # Pelican scale: 4,3,2,1,0,-1
+    score: int | None = None   # Pelican scale 4..-1; 5 = exact duplicate (stored as 4 + report)
     user: str
     code: str = ""
 
@@ -297,9 +298,13 @@ def judge(j: Judgment, request: Request):
         raise HTTPException(400, "please set a name (2+ characters)")
     user = annotator_uid(nick)   # science sees only the pseudonym
     if j.score is not None:
-        if j.score not in (4, 3, 2, 1, 0, -1):
+        if j.score not in (5, 4, 3, 2, 1, 0, -1):
             raise HTTPException(400, "bad score")
-        add_constraint(j.a_id, j.b_id, None, user, score=j.score)
+        if j.score == 5:   # exact duplicate: strongest same-signal + dedup evidence,
+            add_duplicate_report(j.a_id, j.b_id, user)   # without widening the IAA scale
+            add_constraint(j.a_id, j.b_id, None, user, score=4)
+        else:
+            add_constraint(j.a_id, j.b_id, None, user, score=j.score)
     elif j.label in ("must", "cannot"):
         add_constraint(j.a_id, j.b_id, j.label, user)
     elif j.label == "exclude_a":
