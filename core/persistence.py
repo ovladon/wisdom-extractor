@@ -83,7 +83,7 @@ def init_db():
 def _pseudonymize_legacy_users(cur):
     """One-time, idempotent: convert plain nicknames in constraints.user to uids."""
     import secrets
-    cur.execute("SELECT DISTINCT user FROM constraints WHERE user IS NOT NULL AND user NOT LIKE 'u\_%' ESCAPE '\\'")
+    cur.execute(r"SELECT DISTINCT user FROM constraints WHERE user IS NOT NULL AND user NOT LIKE 'u\_%' ESCAPE '\'")
     for (nick,) in cur.fetchall():
         cur.execute("SELECT uid FROM annotators WHERE nickname=?", (nick,))
         row = cur.fetchone()
