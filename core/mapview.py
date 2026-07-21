@@ -96,10 +96,25 @@ def build_map_data(df, min_coverage=4, max_clusters=120, max_edges=120):
     }
 
 
-def build_map_html(df, min_coverage=4):
+def build_map_html(df, min_coverage=4, meta=None):
+    """meta: optional dict {proverbs, peoples, judgments, generated} for the public header."""
     data = build_map_data(df, min_coverage=min_coverage)
     land = open(os.path.join(DATA_DIR, "world_map_paths.svg"), encoding="utf-8").read()
-    return _TEMPLATE.replace("__SVGMAP__", land).replace("__DATA__", json.dumps(data, ensure_ascii=False))
+    m = meta or {}
+    import datetime
+    header = ""
+    if m:
+        header = (
+            '<div class="pubbar">'
+            '<div><b>The living map of human wisdom</b> — '
+            f'{m.get("proverbs", 0):,} sayings · {m.get("peoples", 0)} peoples · '
+            f'shaped by {m.get("judgments", 0):,} human judgments · '
+            f'updated {m.get("generated", datetime.date.today().isoformat())}</div>'
+            '<a href="https://annotate.wisdomextractor.com">🧭 Add your judgment — it redraws this map</a>'
+            "</div>")
+    return (_TEMPLATE.replace("__SVGMAP__", land)
+                     .replace("__DATA__", json.dumps(data, ensure_ascii=False))
+                     .replace("__PUBBAR__", header))
 
 
 _TEMPLATE = """<!doctype html><html><head><meta charset="utf-8"><style>
@@ -110,6 +125,12 @@ _TEMPLATE = """<!doctype html><html><head><meta charset="utf-8"><style>
 *{box-sizing:border-box}
 body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Seravek","Ubuntu",Calibri,"DejaVu Sans",sans-serif;padding:8px}
 .controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin:0 0 10px}
+.pubbar{display:flex;flex-wrap:wrap;gap:10px;align-items:center;justify-content:space-between;
+  background:var(--surface);border:1px solid var(--line);border-radius:8px;
+  padding:10px 14px;margin:0 0 12px;font-size:13.5px;color:var(--ink-2)}
+.pubbar b{color:var(--ink)}
+.pubbar a{background:var(--accent);color:#fff;text-decoration:none;font-weight:650;
+  padding:8px 14px;border-radius:8px;white-space:nowrap}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .seg button{border:0;background:var(--surface);color:var(--ink-2);padding:6px 12px;cursor:pointer;font:inherit;font-size:13px}
 .seg button[aria-pressed="true"]{background:var(--accent);color:#fff}
@@ -139,6 +160,7 @@ padding:7px 10px;font-size:12.5px;max-width:290px;box-shadow:0 4px 14px rgba(0,0
 .exlist b{color:var(--ink)}
 .note{color:var(--ink-3);font-size:12px;margin-top:8px}
 </style></head><body>
+__PUBBAR__
 <div class="controls">
   <div class="seg"><button id="bMotif" aria-pressed="true">Motif view</button><button id="bNet" aria-pressed="false">Network</button></div>
   <div class="seg"><button id="bWorld" aria-pressed="true">World</button><button id="bEur" aria-pressed="false">Europe</button></div>

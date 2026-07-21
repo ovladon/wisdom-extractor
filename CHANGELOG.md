@@ -4,6 +4,16 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.14 — 2026-07-21
+- **Public living map**: `/map` on the annotate service — no access code, regenerated
+  from the database every 6 hours, with a freshness header (sayings/peoples/judgments/
+  updated date) and a contribution CTA; embeddable on project domains (CSP
+  frame-ancestors). Netlify `_redirects` proxies it to wisdomextractor.com/map and
+  /play to the game.
+- **Landing page rebuilt** around the map-and-contribution story: dual CTAs, the
+  "why your thirty seconds matter" narrative, live-ish corpus numbers, 1663/1562
+  time-depth hooks.
+
 ## v19.13 — 2026-07-21
 - **Nicknames are display-only.** New `annotators` table maps each nickname to a random
   pseudonym (`u_xxxxxxxx`); all judgments, reliability computations, consensus, exports,

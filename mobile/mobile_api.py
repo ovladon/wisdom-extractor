@@ -97,7 +97,12 @@ async def security_headers(request, call_next):
     resp = await call_next(request)
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["Referrer-Policy"] = "no-referrer"
-    resp.headers["X-Frame-Options"] = "DENY"
+    if request.url.path == "/map":   # the public map may be embedded on our own sites
+        resp.headers["Content-Security-Policy"] = (
+            "frame-ancestors 'self' https://wisdomextractor.com https://*.wisdomextractor.com "
+            "https://*.netlify.app")
+    else:
+        resp.headers["X-Frame-Options"] = "DENY"
     return resp
 
 _pool = {"pairs": [], "by_id": {}, "built": 0.0, "strata": {}, "cycle": 0}
@@ -179,6 +184,31 @@ def manifest():
 @app.get("/privacy")
 def privacy():
     return FileResponse(os.path.join(HERE, "privacy.html"))
+
+
+_map_cache = {"html": None, "built": 0.0}
+MAP_TTL = 6 * 3600
+
+
+@app.get("/map")
+def public_map(request: Request):
+    """Public living map — no code required; regenerated from the database every 6h."""
+    _rate_check(_client_key(request))
+    if _map_cache["html"] is None or time.time() - _map_cache["built"] > MAP_TTL:
+        import datetime
+        import pandas as pd
+        from fastapi.concurrency import run_in_threadpool  # noqa: F401 (sync route)
+        from core.mapview import build_map_html
+        rows = list_proverbs(with_claims_only=True)
+        df = pd.DataFrame(rows)
+        s = stats()
+        _map_cache["html"] = build_map_html(df, meta={
+            "proverbs": s["proverbs"], "peoples": s["peoples"],
+            "judgments": s["must"] + s["cannot"],
+            "generated": datetime.date.today().isoformat()})
+        _map_cache["built"] = time.time()
+    from fastapi.responses import HTMLResponse
+    return HTMLResponse(_map_cache["html"])
 
 
 @app.get("/api/config")
