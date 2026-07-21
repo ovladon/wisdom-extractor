@@ -67,7 +67,8 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
 .stat{display:flex;gap:18px;margin:10px 0 16px}
 .stat div b{display:block;font-size:22px}
 .stat div span{color:var(--ink3);font-size:12px}
-.hidden{display:none}
+#game{display:flex;flex-direction:column;flex:1}
+.hidden{display:none !important}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:calc(24px + env(safe-area-inset-bottom));
   background:var(--ink);color:var(--bg);padding:9px 16px;border-radius:10px;font-size:14px;opacity:0;transition:opacity .25s;pointer-events:none}
 </style>
@@ -87,7 +88,7 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
   <a href="/privacy" style="color:var(--accent)">privacy</a></p>
 </div>
 
-<div id="game" class="hidden" style="display:flex;flex-direction:column;flex:1">
+<div id="game" class="hidden">
 <header>
   <h1>🧭 Wisdom Lab</h1>
   <div id="streak">—</div>

@@ -4,6 +4,12 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.16 — 2026-07-21
+- **Fix: the game screen truly hides now.** An inline display:flex on the game panel
+  overrode the .hidden class since v19.5, so the empty proverb card and buttons stayed
+  visible above the human-verification step. Hidden is now !important and the flex
+  layout lives in CSS: until verification passes, the check is the only thing on screen.
+
 ## v19.15 — 2026-07-21
 - **Human check made legible**: full "Step 2 of 2" welcome card explaining WHY the
   proverbs haven't loaded yet (bot protection, one-time, device trusted a week), visible
