@@ -184,6 +184,9 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
 <script>
 let user=localStorage.getItem("wl_name")||"", code=localStorage.getItem("wl_code")||"";
 let human=localStorage.getItem("wl_human")||"", codeRequired=true, challengeId=null;
+let akey=localStorage.getItem("wl_akey")||"";
+if(!akey){akey=(self.crypto&&crypto.randomUUID)?crypto.randomUUID()
+  :String(Math.random()).slice(2)+Date.now();localStorage.setItem("wl_akey",akey);}
 let pair=null, streak=0, session=0, strategy="uncertain";
 const $=id=>document.getElementById(id);
 
@@ -192,12 +195,19 @@ function toast(msg){const t=$("toast");t.textContent=msg;t.style.opacity=1;
 function buzz(ms){if(navigator.vibrate)navigator.vibrate(ms);}
 
 async function api(path,opts){
-  opts=opts||{};opts.headers=Object.assign({"X-Access-Code":code,"X-Human":human},opts.headers||{});
+  opts=opts||{};opts.headers=Object.assign({"X-Access-Code":code,"X-Human":human,"X-Annotator-Key":akey},opts.headers||{});
   const r=await fetch(path,opts);
   if(r.status===401){
     $("game").classList.add("hidden");$("board").classList.add("hidden");
     $("setup").classList.remove("hidden");
     $("setupMsg").textContent="That access code isn't right — check the one you received.";
+    return null;
+  }
+  if(r.status===409){
+    $("game").classList.add("hidden");$("board").classList.add("hidden");
+    $("humanModal").classList.add("hidden");
+    $("setup").classList.remove("hidden");
+    $("setupMsg").textContent="That nickname is taken on another device — please pick a different one.";
     return null;
   }
   if(r.status===403){human="";localStorage.removeItem("wl_human");

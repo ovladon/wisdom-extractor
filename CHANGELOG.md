@@ -4,6 +4,17 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.21 — 2026-07-22
+- **Nickname-device binding** (link now spreading publicly): the browser silently
+  generates a device key; the first device to judge under a nickname claims it
+  (sha256 of key stored in annotators.key_hash). Another device using the same
+  nickname gets a clear 409 and a prompt to pick a different name. Legacy clients
+  without a key still work and claim on next reload; existing annotators are
+  grandfathered on first return. Zero added friction — no accounts, no passwords.
+- **IAA hardening**: consensus and Krippendorff's alpha now keep only each
+  annotator's LATEST vote per pair — self-repeats can no longer masquerade as
+  inter-annotator agreement or multiply one person's voice.
+
 ## v19.20 — 2026-07-22
 - Navigation back to wisdomextractor.com from both public surfaces: 🏠 link in the
   map's pubbar and in the annotation app (footer + setup panel).

@@ -76,6 +76,9 @@ def init_db():
     for col, typ in PROVERB_COLUMNS:
         if col not in have:
             cur.execute(f"ALTER TABLE proverbs ADD COLUMN {col} {typ}")
+    cur.execute("PRAGMA table_info(annotators)")
+    if "key_hash" not in {r[1] for r in cur.fetchall()}:
+        cur.execute("ALTER TABLE annotators ADD COLUMN key_hash TEXT")
     # graded semantic-equivalence score (Pelican scale: 4..0 and -1), alongside legacy label
     cur.execute("PRAGMA table_info(constraints)")
     if "score" not in {r[1] for r in cur.fetchall()}:
@@ -356,6 +359,27 @@ def enrich_family_region(metadata_csv):
 #   2 same theme                          -> no hard link (stored as 'theme')
 #   1 complementary / 0 unrelated / -1 contradiction -> cannot-link
 SCORE_TO_LABEL = {4: "must", 3: "must", 2: "theme", 1: "cannot", 0: "cannot", -1: "cannot"}
+
+
+def claim_nickname(nickname, device_key):
+    """First-device-wins nickname binding. Empty key = legacy client: allowed, no claim.
+    Returns True if the nickname is usable from this device, False if it belongs to
+    another device."""
+    if not device_key:
+        return True
+    kh = hashlib.sha256(device_key.encode("utf-8")).hexdigest()
+    uid = annotator_uid(nickname)          # ensures the row exists
+    con = connect(); cur = con.cursor()
+    cur.execute("SELECT key_hash FROM annotators WHERE uid=?", (uid,))
+    stored = (cur.fetchone() or [None])[0]
+    ok = True
+    if stored is None:
+        cur.execute("UPDATE annotators SET key_hash=? WHERE uid=?", (kh, uid))
+        con.commit()
+    elif stored != kh:
+        ok = False
+    con.close()
+    return ok
 
 
 def add_duplicate_report(a_id, b_id, user):

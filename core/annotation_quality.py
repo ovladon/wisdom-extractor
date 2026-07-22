@@ -36,14 +36,19 @@ def aggregate_constraints(constraints, iterations=3):
       annotators: {user: {n, reliability}}  — reliability = smoothed ordinal closeness
         of the annotator's votes to consensus (1 = always on it, 0 = maximally far).
     """
-    votes = defaultdict(list)   # pair -> [(score, user)]
+    # keep only each annotator's LATEST vote per pair: repeated serves of the same
+    # pair must update, not multiply, that person's voice
+    latest = {}
     for c in constraints:
         sc = c.get("score")
         if sc is None:
             sc = {"must": 4, "cannot": 0}.get(c.get("label"))
         if sc is None:
             continue
-        votes[_pair_key(int(c["a_id"]), int(c["b_id"]))].append((float(sc), c.get("user") or "(anon)"))
+        latest[(_pair_key(int(c["a_id"]), int(c["b_id"])), c.get("user") or "(anon)")] = float(sc)
+    votes = defaultdict(list)   # pair -> [(score, user)]
+    for (pair, user), sc in latest.items():
+        votes[pair].append((sc, user))
 
     HALF = 2.5   # half of the -1..4 range; closeness = 1 - |vote-consensus|/HALF (floored 0)
     reliability = defaultdict(lambda: PRIOR_CORRECT)
@@ -121,14 +126,19 @@ def krippendorff_alpha_ordinal(constraints, scale=(-1, 0, 1, 2, 3, 4)):
     missing, so mixed old/new data still yields a defined statistic.
     """
     from collections import defaultdict
-    vals = defaultdict(list)
+    # latest vote per (annotator, pair): self-repeats must not masquerade as
+    # inter-annotator agreement
+    latest = {}
     for c in constraints:
         s = c.get("score")
         if s is None:
             s = {"must": 4, "cannot": 0}.get(c.get("label"))
         if s is None:
             continue
-        vals[_pair_key(int(c["a_id"]), int(c["b_id"]))].append(int(s))
+        latest[(_pair_key(int(c["a_id"]), int(c["b_id"])), c.get("user") or "(anon)")] = int(s)
+    vals = defaultdict(list)
+    for (pair, _user), s in latest.items():
+        vals[pair].append(s)
     units = {k: v for k, v in vals.items() if len(v) >= 2}
     if len(units) < 2:
         return None, len(units)

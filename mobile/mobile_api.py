@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from core.persistence import (init_db, list_proverbs, add_constraint, add_duplicate_report,
-                              add_correction,
+                              add_correction, claim_nickname,
                               mark_excluded,
                               list_constraints, stats, leaderboard, backfill_glosses,
                               annotator_uid)
@@ -137,6 +137,12 @@ def _check_code(code, request=None):
             if len(q) > BAD_CODE_MAX:
                 raise HTTPException(429, "too many wrong codes — try again later")
         raise HTTPException(401, "wrong access code")
+
+
+def _check_nickname(name, request):
+    if not claim_nickname(name, request.headers.get("x-annotator-key", "")):
+        raise HTTPException(409, "that nickname is already taken on another device — "
+                                 "please choose a different one")
 
 
 def _check_human(request):
@@ -299,6 +305,7 @@ def judge(j: Judgment, request: Request):
     nick = (j.user or "").strip()[:40]
     if len(nick) < 2:
         raise HTTPException(400, "please set a name (2+ characters)")
+    _check_nickname(nick, request)
     user = annotator_uid(nick)   # science sees only the pseudonym
     if j.score is not None:
         if j.score not in (5, 4, 3, 2, 1, 0, -1):
@@ -340,6 +347,7 @@ def suggest_fix(f: Fix, request: Request):
     name = f.user.strip()
     if len(name) < 2:
         raise HTTPException(400, "please set a nickname first")
+    _check_nickname(name, request)
     t = " ".join(f.text.split())
     if not (5 <= len(t) <= 300):
         raise HTTPException(400, "that doesn't look like a saying")
