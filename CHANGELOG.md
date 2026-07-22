@@ -4,6 +4,20 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.19 — 2026-07-22
+- **Corpus self-cleaning** (annotator-reported problem: OCR garbles like "ivants"
+  and abundant near-duplicates). Three new pipeline steps each maintenance cycle:
+  fix_ocr_artifacts() repairs the w->'iv' OCR confusion using the corpus as its own
+  dictionary (rare word + common 'w' variant required); dedup_normalized() auto-
+  excludes same-people twins identical after case/punctuation normalization (keeper
+  inherits earliest attestation; cross-people twins preserved as data);
+  apply_corrections() applies annotator-suggested fixes when typo-sized (>=0.85
+  similarity), larger rewrites stay pending. Fixed rows get claim/gloss cleared for
+  re-derivation; hash collisions resolve as exclusions.
+- **"Fix A/B's spelling" buttons** in the app + /api/fix endpoint (code+human+rate
+  guarded, fix must stay >=0.5 similar to the original); guide explains judging
+  garbled-but-readable sayings by their intended meaning.
+
 ## v19.18 — 2026-07-21
 - **Duplicate reports now feed the pipeline**: each maintenance cycle merges
   human-reported exact duplicates as attestations of one saying (keeper inherits the

@@ -125,10 +125,15 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
     <button onclick="judge('exclude_a')">A isn't a saying</button>
     <button onclick="judge('exclude_b')">B isn't a saying</button>
   </div>
+  <div class="actions2" style="grid-template-columns:1fr 1fr">
+    <button onclick="suggestFix('a')">✏️ Fix A's spelling</button>
+    <button onclick="suggestFix('b')">✏️ Fix B's spelling</button>
+  </div>
   <div class="swipetip">…or swipe: left = unrelated, right = related (then pick how)</div>
   <div class="swipetip"><a href="#" onclick="toggleGuide();return false" style="color:var(--accent)">ⓘ How to judge — the 6 levels</a></div>
   <div id="guide" class="guide hidden">
     <p><b>Judge the idea, not the imagery.</b> First ask: what practical lesson does each saying teach?</p>
+    <p>✏️ <b>Typos & old spellings</b> — OCR sometimes garbles words ("ivants" = "wants"). If you can still read the intended saying, judge its meaning and tap ✏️ to suggest the fix. Use "isn't a saying" only for text that is no proverb at all.</p>
     <p>👯 <b>Exact duplicate</b> — both fields show the very same proverb, word for word (or trivially so: spelling/punctuation). <i>Happens when two collections recorded the same saying.</i></p>
     <p>🎯 <b>Same rule</b> — same rule or conclusion; only the wording differs. <i>Test: explaining one gives almost exactly the explanation of the other.</i></p>
     <p>🤝 <b>Same advice</b> — different metaphor, same practical recommendation. <i>Test: I'd use either to advise someone in the same situation.</i></p>
@@ -234,6 +239,16 @@ async function submitHuman(){
   }
 }
 
+async function suggestFix(which){
+  if(!pair)return;
+  const it = which==='a'?pair.a:pair.b;
+  const t = prompt("Correct the saying (spelling/OCR only — keep the wording):",
+                   it.original||it.gloss);
+  if(!t||t.trim()===(it.original||it.gloss).trim())return;
+  const d = await api("/api/fix",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({pid:it.id,text:t.trim(),user,code})});
+  if(d)toast("Fix recorded — thank you! ✏️");
+}
 async function nextPair(){
   // alternate strategies to keep it fresh: mostly uncertain, sometimes disputed
   strategy=(session%7===6)?"disputed":"uncertain";

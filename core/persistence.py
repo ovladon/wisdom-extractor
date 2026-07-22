@@ -64,6 +64,11 @@ def init_db():
       a_id INTEGER, b_id INTEGER, user TEXT, created_at REAL,
       UNIQUE(a_id, b_id, user)
     );
+    CREATE TABLE IF NOT EXISTS corrections(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pid INTEGER, old_text TEXT, new_text TEXT, user TEXT,
+      created_at REAL, applied INTEGER DEFAULT 0
+    );
     """)
     # migrate: add any missing proverb columns (upgrades v15-v18 databases in place)
     cur.execute("PRAGMA table_info(proverbs)")
@@ -362,6 +367,113 @@ def add_duplicate_report(a_id, b_id, user):
     con.execute("INSERT OR IGNORE INTO duplicate_reports(a_id,b_id,user,created_at) "
                 "VALUES(?,?,?,?)", (a, b, user, _t.time()))
     con.commit(); con.close()
+
+
+def add_correction(pid, new_text, user):
+    con = connect(); cur = con.cursor()
+    cur.execute("SELECT text FROM proverbs WHERE id=?", (pid,))
+    row = cur.fetchone()
+    if row:
+        cur.execute("INSERT INTO corrections(pid,old_text,new_text,user,created_at) "
+                    "VALUES(?,?,?,?,?)", (pid, row[0], new_text, user, time.time()))
+        con.commit()
+    con.close()
+    return bool(row)
+
+
+def apply_corrections(sim_threshold=0.85):
+    """Apply pending annotator corrections that are typo-sized (difflib >= threshold
+    vs the CURRENT text). Bigger rewrites stay pending for manual review. The fixed
+    row gets claim/gloss cleared so the pipeline re-derives them. If the corrected
+    text collides with an existing row's hash, the row is a duplicate: excluded."""
+    from difflib import SequenceMatcher
+    con = connect(); cur = con.cursor()
+    applied = 0
+    for cid, pid, new_text in cur.execute(
+            "SELECT id, pid, new_text FROM corrections WHERE applied=0").fetchall():
+        row = con.execute("SELECT text, excluded FROM proverbs WHERE id=?", (pid,)).fetchone()
+        if not row or row[1]:
+            con.execute("UPDATE corrections SET applied=-1 WHERE id=?", (cid,)); continue
+        if SequenceMatcher(None, row[0].lower(), new_text.lower()).ratio() < sim_threshold:
+            continue
+        try:
+            con.execute("UPDATE proverbs SET text=?, hash=?, claim=NULL, gloss=NULL WHERE id=?",
+                        (new_text, _hash_text(new_text), pid))
+        except sqlite3.IntegrityError:
+            con.execute("UPDATE proverbs SET excluded=1 WHERE id=?", (pid,))
+        con.execute("UPDATE corrections SET applied=1 WHERE id=?", (cid,))
+        applied += 1
+    con.commit(); con.close()
+    return applied
+
+
+def fix_ocr_artifacts(min_good=10, max_bad=3):
+    """Repair the classic OCR w->'iv' confusion ('ivants' -> 'wants', 'betiveen' ->
+    'between') using the corpus as its own dictionary: a word is rewritten only when
+    it is rare (<= max_bad occurrences) and the 'iv'->'w' variant is common
+    (>= min_good). Fixed rows get claim/gloss cleared for re-derivation; a fix that
+    collides with an existing row is a duplicate and gets excluded."""
+    from collections import Counter
+    con = connect(); cur = con.cursor()
+    rows = cur.execute("SELECT id, text FROM proverbs WHERE excluded=0").fetchall()
+    freq = Counter(w for _, t in rows for w in re.findall(r"[a-z]+", t.lower()))
+    mapping = {}
+    for w, c in freq.items():
+        if "iv" in w and len(w) > 3 and c <= max_bad:
+            cand = w.replace("iv", "w")
+            if freq.get(cand, 0) >= min_good:
+                mapping[w] = cand
+    if not mapping:
+        con.close(); return 0
+    word_rx = re.compile(r"[A-Za-z]+")
+    def repl(m):
+        w = m.group(0); nw = mapping.get(w.lower())
+        if not nw:
+            return w
+        return nw.capitalize() if w[0].isupper() else nw
+    fixed = 0
+    for pid, text in rows:
+        new = word_rx.sub(repl, text)
+        if new == text:
+            continue
+        try:
+            con.execute("UPDATE proverbs SET text=?, hash=?, claim=NULL, gloss=NULL WHERE id=?",
+                        (new, _hash_text(new), pid))
+        except sqlite3.IntegrityError:
+            con.execute("UPDATE proverbs SET excluded=1 WHERE id=?", (pid,))
+        fixed += 1
+    con.commit(); con.close()
+    return fixed
+
+
+def _norm_dedup(t):
+    t = re.sub(r"[^a-z0-9\u00c0-\u024f\u0370-\u03ff\u0400-\u04ff ]+", " ", t.lower())
+    return re.sub(r"\s+", " ", t).strip()
+
+
+def dedup_normalized():
+    """Auto-exclude twins whose texts are identical after case/punctuation
+    normalization, within the same people only (cross-people twins are data).
+    Keeper = earliest first_seen then lowest id; inherits the earliest year."""
+    con = connect(); cur = con.cursor()
+    groups = {}
+    for pid, text, people, year in cur.execute(
+            "SELECT id, text, people, first_seen FROM proverbs WHERE excluded=0").fetchall():
+        groups.setdefault((people or "", _norm_dedup(text)), []).append((year or 9999, pid, year))
+    excluded = 0
+    for members in groups.values():
+        if len(members) < 2:
+            continue
+        members.sort()
+        year = min((y for _, _, y in members if y), default=None)
+        keeper = members[0][1]
+        con.execute("UPDATE proverbs SET first_seen=COALESCE(?, first_seen) WHERE id=?",
+                    (year, keeper))
+        for _, pid, _ in members[1:]:
+            con.execute("UPDATE proverbs SET excluded=1 WHERE id=?", (pid,))
+            excluded += 1
+    con.commit(); con.close()
+    return excluded
 
 
 def merge_reported_duplicates(min_reporters=2, sim_threshold=0.85):

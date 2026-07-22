@@ -18,6 +18,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from core.persistence import (init_db, list_proverbs, add_constraint, add_duplicate_report,
+                              add_correction,
                               mark_excluded,
                               list_constraints, stats, leaderboard, backfill_glosses,
                               annotator_uid)
@@ -317,6 +318,36 @@ def judge(j: Judgment, request: Request):
         _pool["by_id"].pop(j.b_id, None)
     else:
         raise HTTPException(400, "bad label")
+    return {"ok": True}
+
+
+class Fix(BaseModel):
+    pid: int
+    text: str
+    user: str = ""
+    code: str = ""
+
+
+@app.post("/api/fix")
+def suggest_fix(f: Fix, request: Request):
+    """Annotator-suggested spelling/OCR correction; typo-sized fixes are applied by
+    the weekly pipeline, larger rewrites wait for review."""
+    _rate_check(_client_key(request))
+    _check_code(f.code, request)
+    _check_human(request)
+    name = f.user.strip()
+    if len(name) < 2:
+        raise HTTPException(400, "please set a nickname first")
+    t = " ".join(f.text.split())
+    if not (5 <= len(t) <= 300):
+        raise HTTPException(400, "that doesn't look like a saying")
+    import difflib
+    row = next((r for r in list_proverbs(excluded=False) if r["id"] == f.pid), None)
+    if not row:
+        raise HTTPException(404, "unknown proverb")
+    if difflib.SequenceMatcher(None, row["text"].lower(), t.lower()).ratio() < 0.5:
+        raise HTTPException(400, "a fix should stay close to the original wording")
+    add_correction(f.pid, t, annotator_uid(name))
     return {"ok": True}
 
 

@@ -30,7 +30,8 @@ from core.cleaner import keep, quality_score, strip_citations, extract_attestati
 from core.canonicalize import canonicalize
 from core.clustering import cluster_texts
 from core.annotation_quality import aggregate_constraints, constraint_pairs_for_clustering
-from core.persistence import merge_reported_duplicates
+from core.persistence import (merge_reported_duplicates, fix_ocr_artifacts,
+                              apply_corrections, dedup_normalized)
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 
@@ -98,6 +99,10 @@ def main():
     if args.scrape > 0:
         summary["scrape"] = scrape_next(args.scrape, args.source)
         print("scrape:", summary["scrape"])
+
+    summary["ocr_fixed"] = fix_ocr_artifacts()
+    summary["corrections_applied"] = apply_corrections()
+    summary["dedup_excluded"] = dedup_normalized()
 
     summary["people_backfilled"] = backfill_people_from_urls()
     summary["family_region_enriched"] = enrich_family_region(os.path.join(DATA_DIR, "people_metadata.csv"))
