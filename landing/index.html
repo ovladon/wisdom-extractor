@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Wisdom Extractor — the living map of human wisdom</title>
-<meta name="description" content="Three thousand years of proverbs from 76+ peoples, mapped. See where the same wisdom appears across cultures and centuries — and help the map grow.">
+<meta name="description" content="Three thousand years of proverbs from 79 peoples, mapped. See where the same wisdom appears across cultures and centuries — and help the map grow.">
 <style>
 :root{--bg:#f7f6f2;--card:#fdfdfb;--ink:#171613;--ink2:#5a5850;--ink3:#8a877c;--line:#dedbd2;--accent:#2a78d6;--go:#1baf7a;--gold:#eda100}
 @media (prefers-color-scheme:dark){:root{--bg:#141412;--card:#1c1c19;--ink:#f2f1ea;--ink2:#b9b7ab;--ink3:#7f7d72;--line:#33322c;--accent:#3987e5;--go:#199e70;--gold:#c98500}}
@@ -32,6 +32,15 @@ h2{font-size:22px;margin:44px 0 6px}
 .nums div b{display:block;font-size:28px;font-variant-numeric:tabular-nums}
 .nums div span{color:var(--ink3);font-size:13px}
 .numnote{color:var(--ink3);font-size:13px}
+.pairs{display:grid;gap:12px;margin:18px 0 8px}
+.pair{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:14px 18px;
+  display:grid;grid-template-columns:1fr auto 1fr;gap:12px;align-items:center}
+.pair .eq{color:var(--gold);font-size:22px;font-weight:700;text-align:center}
+.pa{margin:0;font-style:italic}
+.pa span{display:block;font-style:normal;color:var(--ink3);font-size:12.5px;margin-top:4px;
+  text-transform:uppercase;letter-spacing:.05em}
+@media (max-width:560px){.pair{grid-template-columns:1fr}.pair .eq{text-align:left}}
+.step a{color:var(--accent);text-decoration:none}
 footer{margin-top:52px;color:var(--ink3);font-size:14px;border-top:1px solid var(--line);padding-top:18px}
 footer a{color:var(--accent);text-decoration:none}
 </style>
@@ -71,13 +80,49 @@ footer a{color:var(--accent);text-decoration:none}
   </div>
 
   <div class="nums">
-    <div><b>25,000+</b><span>sayings with provenance</span></div>
-    <div><b>76+</b><span>peoples represented</span></div>
+    <div><b id="nProv">32,000+</b><span>sayings with provenance</span></div>
+    <div><b id="nPeoples">79</b><span>peoples represented</span></div>
+    <div><b id="nJudge">400+</b><span>human judgments</span></div>
     <div><b>1663</b><span>oldest full collection ingested</span></div>
     <div><b>1562</b><span>earliest dated attestation</span></div>
   </div>
+  <p class="numnote">The oldest voice on the map is a Scottish collection printed in 1663 —
+  most of its sayings still instantly recognizable four centuries later.</p>
   <p class="numnote">…and growing weekly: the corpus crawls open collections, and every new
   judgment sharpens the picture. Visit the map twice; it will not be the same map.</p>
+
+  <h2>The same thought, worlds apart</h2>
+  <p class="lead">Pairs like these were recorded continents apart — and verified by human
+  judges as carrying the same idea:</p>
+  <div class="pairs">
+    <div class="pair">
+      <p class="pa">"In wine there is truth."<span>Chinese</span></p><div class="eq">=</div>
+      <p class="pa">"There is truth in wine."<span>Greek</span></p>
+    </div>
+    <div class="pair">
+      <p class="pa">"A stitch in time saves nine."<span>French collection</span></p><div class="eq">=</div>
+      <p class="pa">"A steek in time saves nine."<span>Scottish · printed 1870</span></p>
+    </div>
+    <div class="pair">
+      <p class="pa">"Everyone is creator of his own fortune."<span>Slovak</span></p><div class="eq">=</div>
+      <p class="pa">"Everyone's the blacksmith of their own fate."<span>Hungarian</span></p>
+    </div>
+  </div>
+  <p class="numnote">Every verified link is drawn on the map — and each one started as
+  somebody's thirty-second judgment.</p>
+
+  <h2>Built in the open</h2>
+  <div class="steps">
+    <div class="step"><b>📖 Peer-reviewed method</b><p>The extraction and comparison method
+    behind the map was presented at the ConsILR 2025 conference on linguistic resources.</p></div>
+    <div class="step"><b>🗃️ Citable open data</b><p>The corpus and all anonymized judgments
+    are archived with a <a href="https://doi.org/10.5281/zenodo.21439285">DOI on Zenodo</a>,
+    free for any researcher to use.</p></div>
+    <div class="step"><b>⚙️ Public code</b><p>Every version of the software is
+    <a href="https://github.com/ovladon/wisdom-extractor">on GitHub</a> and archived with a
+    <a href="https://doi.org/10.5281/zenodo.21413838">software DOI</a> — anyone can rebuild
+    this map from scratch.</p></div>
+  </div>
 
   <footer>
     A research project by Vlad Belciug &amp; Elena Pelican (Ovidius University of Constanța) ·
@@ -87,5 +132,12 @@ footer a{color:var(--accent);text-decoration:none}
     <a href="https://annotate.wisdomextractor.com/privacy">Privacy</a>
   </footer>
 </div>
+<script>
+fetch("https://annotate.wisdomextractor.com/api/pubstats").then(r=>r.json()).then(d=>{
+  if(d.proverbs)document.getElementById("nProv").textContent=d.proverbs.toLocaleString("en-US");
+  if(d.peoples)document.getElementById("nPeoples").textContent=d.peoples;
+  if(d.judgments)document.getElementById("nJudge").textContent=d.judgments.toLocaleString("en-US");
+}).catch(()=>{});
+</script>
 </body>
 </html>

@@ -99,6 +99,8 @@ async def security_headers(request, call_next):
     resp = await call_next(request)
     resp.headers["X-Content-Type-Options"] = "nosniff"
     resp.headers["Referrer-Policy"] = "no-referrer"
+    if request.url.path == "/api/pubstats":
+        resp.headers["Access-Control-Allow-Origin"] = "*"
     if request.url.path == "/map":   # the public map may be embedded on our own sites
         resp.headers["Content-Security-Policy"] = (
             "frame-ancestors 'self' https://wisdomextractor.com https://*.wisdomextractor.com "
@@ -349,6 +351,27 @@ def suggest_fix(f: Fix, request: Request):
         raise HTTPException(400, "a fix should stay close to the original wording")
     add_correction(f.pid, t, annotator_uid(name))
     return {"ok": True}
+
+
+_pub_cache = {"data": None, "built": 0.0}
+
+
+@app.get("/api/pubstats")
+def pubstats(request: Request):
+    """Public corpus counters for the landing page (1h cache)."""
+    _rate_check(_client_key(request))
+    if _pub_cache["data"] is None or time.time() - _pub_cache["built"] > 3600:
+        from core.persistence import connect, stats as _stats
+        st = _stats()
+        con = connect()
+        judgments = con.execute("SELECT COUNT(*) FROM constraints").fetchone()[0]
+        dated = con.execute("SELECT COUNT(*) FROM proverbs WHERE excluded=0 "
+                            "AND first_seen IS NOT NULL").fetchone()[0]
+        con.close()
+        _pub_cache.update(data={"proverbs": st["proverbs"], "peoples": st["peoples"],
+                                "judgments": judgments, "dated": dated},
+                          built=time.time())
+    return _pub_cache["data"]
 
 
 @app.get("/api/me")

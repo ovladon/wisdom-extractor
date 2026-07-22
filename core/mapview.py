@@ -110,6 +110,7 @@ def build_map_html(df, min_coverage=4, meta=None):
             f'{m.get("proverbs", 0):,} sayings · {m.get("peoples", 0)} peoples · '
             f'shaped by {m.get("judgments", 0):,} human judgments · '
             f'updated {m.get("generated", datetime.date.today().isoformat())}</div>'
+            '<a class="home" href="https://wisdomextractor.com">🏠 wisdomextractor.com</a>'
             '<a href="https://annotate.wisdomextractor.com">🧭 Add your judgment — it redraws this map</a>'
             "</div>")
     return (_TEMPLATE.replace("__SVGMAP__", land)
@@ -131,6 +132,7 @@ body{margin:0;background:var(--bg);color:var(--ink);font:14px/1.5 "Seravek","Ubu
 .pubbar b{color:var(--ink)}
 .pubbar a{background:var(--accent);color:#fff;text-decoration:none;font-weight:650;
   padding:8px 14px;border-radius:8px;white-space:nowrap}
+.pubbar a.home{background:transparent;color:var(--accent);font-weight:600;padding:8px 4px}
 .seg{display:inline-flex;border:1px solid var(--line);border-radius:6px;overflow:hidden}
 .seg button{border:0;background:var(--surface);color:var(--ink-2);padding:6px 12px;cursor:pointer;font:inherit;font-size:13px}
 .seg button[aria-pressed="true"]{background:var(--accent);color:#fff}

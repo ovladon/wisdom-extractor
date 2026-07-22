@@ -4,6 +4,16 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.20 — 2026-07-22
+- Navigation back to wisdomextractor.com from both public surfaces: 🏠 link in the
+  map's pubbar and in the annotation app (footer + setup panel).
+- New public /api/pubstats endpoint (1h cache, CORS-open, rate-limited) feeding live
+  counters on the landing page.
+- Landing: verified cross-cultural convergence showcase ("In wine there is truth"
+  Chinese=Greek; stitch/steek French=Scottish 1870; Slovak=Hungarian fate), "Built in
+  the open" strip (ConsILR method, Zenodo DOIs, GitHub), 1663 Stampoy spotlight,
+  live counters with static fallback; numbers refreshed (32,000+/79).
+
 ## v19.19 — 2026-07-22
 - **Corpus self-cleaning** (annotator-reported problem: OCR garbles like "ivants"
   and abundant near-duplicates). Three new pipeline steps each maintenance cycle:
