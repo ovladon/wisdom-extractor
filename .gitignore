@@ -10,3 +10,4 @@ dist/
 # never let documents ride along into the public repo
 *.pdf
 *.docx
+data/live_snapshot.db

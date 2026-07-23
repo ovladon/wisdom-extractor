@@ -181,3 +181,29 @@ clustering — monotonically, with bad-faith annotators automatically down-weigh
   Proverbs…") that previously survived as fake proverbs.
 - App header now suppresses third-party warning noise (TensorFlow plugin registration,
   sklearn FutureWarning, numba/TBB) when run outside a venv.
+
+---
+
+## What's new since the merge (v19.10 → v19.21, July 2026)
+
+The platform grew from a merged prototype into a self-sustaining live system at
+wisdomextractor.com. In brief:
+
+- **Annotation science**: Pelican 6-level graded scale; reliability-weighted *ordinal*
+  consensus (scale −1…4, must ≥ 2.5, cannot ≤ 1.5, confidence = 1 − dispersion/5);
+  Krippendorff's α (ordinal) and weighted κ reporting; stratified pair serving
+  (language-family × region × similarity band); latest-vote-per-annotator dedup.
+- **Corpus**: 18k → ~33k active proverbs, 79 peoples, via public-domain ingestion
+  (Project Gutenberg, Internet Archive OCR with precision filters); attestation years
+  back to 1663 full collections; English glosses; **self-cleaning pipeline** — OCR
+  artifact repair (corpus-as-dictionary), normalized same-people dedup, human-reported
+  duplicate merging as attestations, annotator-suggested spelling fixes.
+- **Platform**: mobile swipe PWA (finish-the-proverb human check, exact-duplicate and
+  fix-a-typo actions, leaderboard) + admin portal + public living map (/map) + public
+  stats API (/api/pubstats); nicknames pseudonymized (science sees only random uids)
+  and bound to the first device that uses them — no accounts, no personal data.
+- **Operations**: dockerized VPS deployment (Caddy HTTPS), weekly self-maintenance
+  (crawl → clean → backfill → aggregate → recluster), nightly backups, GitHub Releases
+  auto-archived on Zenodo with version DOIs (software concept DOI 10.5281/zenodo.21413838).
+- Use `scripts/pull_live_db.sh` to snapshot the live database locally; every analysis
+  in the Streamlit app then reflects the real, current state.
