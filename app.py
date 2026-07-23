@@ -47,6 +47,74 @@ st.set_page_config(page_title="Wisdom Extractor — Unified v19", layout="wide")
 st.title("Wisdom Extractor — Unified v19")
 st.caption("Collect → Clean → Canonicalize → Cluster (with human constraints) → Score → Interpret → Validate")
 
+# ---------- data source: live-first ----------
+import subprocess, time as _time
+import core.persistence as _pers
+
+SNAP = os.path.join(DATA_DIR, "live_snapshot.db")
+WORKSPACE_DIR = os.path.join(DATA_DIR, "workspaces")
+os.makedirs(WORKSPACE_DIR, exist_ok=True)
+_PULL = os.path.join(os.path.dirname(os.path.abspath(__file__)), "scripts", "pull_live_db.sh")
+
+
+def _refresh_snapshot(max_age_min=10):
+    """Pull the live server DB unless the local snapshot is already fresh."""
+    age = (_time.time() - os.path.getmtime(SNAP)) / 60 if os.path.exists(SNAP) else 1e9
+    if age < max_age_min:
+        return "fresh"
+    try:
+        subprocess.run([_PULL, SNAP], capture_output=True, timeout=180, check=True)
+        return "pulled"
+    except Exception:
+        return "offline" if os.path.exists(SNAP) else "none"
+
+
+st.sidebar.subheader("Data source")
+_workspaces = sorted(f for f in os.listdir(WORKSPACE_DIR) if f.endswith(".db"))
+_choices = (["Live corpus (auto-synced from server)"] + _workspaces
+            + ["Legacy local wisdom.db"])
+_src = st.sidebar.selectbox("Database", _choices, index=0,
+                            help="Workspaces are separate databases for new collections; "
+                                 "merge into the live corpus with scripts/merge_workspace.sh")
+if _src == "Live corpus (auto-synced from server)":
+    if "snap_status" not in st.session_state:
+        with st.spinner("Syncing live data from the server…"):
+            st.session_state["snap_status"] = _refresh_snapshot()
+    if st.sidebar.button("🔄 Refresh from server now"):
+        with st.spinner("Pulling fresh snapshot…"):
+            st.session_state["snap_status"] = _refresh_snapshot(0)
+        st.cache_data.clear()
+        st.session_state["db_version"] = st.session_state.get("db_version", 0) + 1
+    if os.path.exists(SNAP):
+        _pers.DB_PATH = SNAP
+        _age = int((_time.time() - os.path.getmtime(SNAP)) / 60)
+        st.sidebar.caption(f"Live snapshot, {_age} min old"
+                           + (" (server unreachable — using last copy)"
+                              if st.session_state["snap_status"] == "offline" else ""))
+    else:
+        st.sidebar.error("No snapshot and server unreachable — using legacy local DB.")
+elif _src == "Legacy local wisdom.db":
+    st.sidebar.caption(f"Local file: {_pers.DB_PATH}")
+else:
+    _pers.DB_PATH = os.path.join(WORKSPACE_DIR, _src)
+    st.sidebar.caption("Workspace database — fully separate from the open corpus.")
+
+_new_ws = st.sidebar.text_input("New workspace name", placeholder="e.g. waterloo_pilot")
+if st.sidebar.button("➕ Create workspace") and _new_ws.strip():
+    _wsp = os.path.join(WORKSPACE_DIR, _new_ws.strip().replace(" ", "_") + ".db")
+    if not os.path.exists(_wsp):
+        _old = _pers.DB_PATH
+        _pers.DB_PATH = _wsp
+        init_db()
+        _pers.DB_PATH = _old
+    st.sidebar.success(f"Workspace ready: {os.path.basename(_wsp)} — select it above.")
+    st.rerun()
+
+if st.session_state.get("db_choice") != _src:
+    st.session_state["db_choice"] = _src
+    st.cache_data.clear()
+    st.session_state["db_version"] = st.session_state.get("db_version", 0) + 1
+
 init_db()
 
 if "db_version" not in st.session_state:
@@ -91,7 +159,7 @@ st.sidebar.json(stats())
 
 tabs = st.tabs(["1) Sources & Scrape", "2) Import & Seed", "3) Clean & Canonicalize",
                 "4) Cluster", "5) Results & Map", "6) Annotate • Play",
-                "7) Diagnostics", "8) Interpretation", "9) Export"])
+                "7) Diagnostics", "8) Interpretation", "9) Export", "🛡 Admin"])
 
 # --------------------------------------------------------------- 1) Sources & Scrape
 with tabs[0]:
@@ -577,3 +645,55 @@ with tabs[8]:
     if os.path.exists(db_path):
         with open(db_path, "rb") as f:
             st.download_button("wisdom.db", f.read(), "wisdom.db", "application/octet-stream")
+
+
+# ---------------------------------------------------------------- 10) Admin / Status
+with tabs[9]:
+    st.subheader("Admin — everything that matters, in one place")
+    st.caption(f"Database in use: `{_pers.DB_PATH}`")
+    from core.persistence import nickname_of
+    from core.annotation_quality import krippendorff_alpha_ordinal as _alpha_fn
+
+    _cons = list_constraints()
+    _agg, _annot = aggregate_constraints(_cons)
+    _al, _units = _alpha_fn(_cons)
+    _must = sum(1 for x in _agg if x["label"] == "must")
+    _cannot = sum(1 for x in _agg if x["label"] == "cannot")
+
+    c1, c2, c3, c4 = st.columns(4)
+    _st = stats()
+    c1.metric("Active proverbs", f"{_st['proverbs']:,}")
+    c2.metric("Peoples", _st["peoples"])
+    c3.metric("Raw judgments", len(_cons))
+    c4.metric("Annotators", len(_annot))
+    c1.metric("Consensus pairs", len(_agg))
+    c2.metric("Same-idea / different", f"{_must} / {_cannot}")
+    c3.metric("Krippendorff α (ordinal)", f"{_al:.3f}" if _al is not None else "n/a",
+              help=f"over {_units} multi-annotated pairs")
+    c4.metric("Duplicate reports", _st.get("duplicate_reports", 0))
+
+    st.markdown("**Annotators** (nicknames shown here only — exports carry pseudonym uids)")
+    _rows = [{"nickname": nickname_of(u) or u, "uid": u,
+              "judgments": a["n"], "reliability": round(a["reliability"], 3)}
+             for u, a in sorted(_annot.items(), key=lambda kv: -kv[1]["n"])]
+    st.dataframe(pd.DataFrame(_rows), use_container_width=True, hide_index=True)
+
+    if st.button("Compute similarity AUC on consensus pairs (~1 min)"):
+        with st.spinner("Vectorizing full corpus and scoring pairs…"):
+            import numpy as _np
+            from scipy.stats import mannwhitneyu as _mwu
+            from sklearn.metrics.pairwise import cosine_similarity as _cos
+            from core.clustering import vectorize as _vec
+            _rows2 = {r["id"]: r for r in list_proverbs(with_claims_only=True)}
+            _ids = list(_rows2)
+            _X, _ = _vec([str(_rows2[i]["claim"]) for i in _ids])
+            _pos = {pid: k for k, pid in enumerate(_ids)}
+            _use = [(x["a_id"], x["b_id"], 1 if x["label"] == "must" else 0)
+                    for x in _agg if x["label"] in ("must", "cannot")
+                    and x["a_id"] in _pos and x["b_id"] in _pos]
+            _sims = _np.array([float(_cos(_X[_pos[a]], _X[_pos[b]])[0, 0]) for a, b, _l in _use])
+            _labs = _np.array([l for _a, _b, l in _use])
+            _n1, _n0 = int(_labs.sum()), int((_labs == 0).sum())
+            _u, _pv = _mwu(_sims[_labs == 1], _sims[_labs == 0], alternative="greater")
+        st.metric("AUC (char n-gram, corpus-fitted)", f"{_u / (_n1 * _n0):.4f}",
+                  help=f"{_n1} same-idea vs {_n0} different pairs, p = {_pv:.1e}")

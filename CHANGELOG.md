@@ -4,6 +4,19 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.22 — 2026-07-23
+- **Live-first analysis app**: app.py now auto-syncs a snapshot of the server
+  database on launch (10-min freshness window, manual refresh button, graceful
+  offline fallback) — local numbers always reflect reality.
+- **Workspaces**: separate databases for new/private proverb collections (sidebar
+  create/select); scripts/merge_workspace.sh merges a workspace into the live corpus
+  (hash-deduped) and runs full maintenance.
+- **Admin tab**: corpus + annotation metrics (α, consensus, reliability table with
+  nicknames, duplicate reports) and on-demand AUC computation in one place.
+- **scripts/sensitivity.py**: automated τ-sweep scored against human consensus;
+  first run shows τ=0.35 is precision-heavy (99.7% cannot-split, 27.7% must-linked;
+  τ=0.45–0.50 reaches 0.82–0.84 constraint accuracy) — revision-paper evidence.
+
 ## v19.21 — 2026-07-22
 - **Nickname-device binding** (link now spreading publicly): the browser silently
   generates a device key; the first device to judge under a nickname claims it
