@@ -714,22 +714,3 @@ with tabs[9]:
             _u, _pv = _mwu(_sims[_labs == 1], _sims[_labs == 0], alternative="greater")
         st.metric("AUC (char n-gram, corpus-fitted)", f"{_u / (_n1 * _n0):.4f}",
                   help=f"{_n1} same-idea vs {_n0} different pairs, p = {_pv:.1e}")
-
-    st.markdown("---")
-    st.markdown("**Canonicalization misses** — where human judgments disagree with the "
-                "method. Each *miss* (judged the same, low similarity) is a candidate for a "
-                "new rule; each *over-merge* (judged different, high similarity) flags a rule "
-                "to restrain. This is the read-only first step of turning annotations into "
-                "better canonicalization.")
-    if st.button("Find canonicalization misses"):
-        with st.spinner("Comparing human links against the current claims…"):
-            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
-            from scripts.canon_misses import find_misses
-            _misses, _over = find_misses()
-        st.write(f"**{len(_misses)} misses** — judged the same idea, but claims are far apart "
-                 "(a rule is missing that should merge them):")
-        if _misses:
-            st.dataframe(pd.DataFrame(_misses), use_container_width=True, hide_index=True)
-        st.write(f"**{len(_over)} over-merges** — judged different, but claims are near-identical:")
-        if _over:
-            st.dataframe(pd.DataFrame(_over), use_container_width=True, hide_index=True)
