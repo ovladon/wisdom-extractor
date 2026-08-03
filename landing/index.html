@@ -5,6 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>The Wisdom Extractor — the living map of human wisdom</title>
 <meta name="description" content="Three thousand years of proverbs from 79 peoples, mapped. See where the same wisdom appears across cultures and centuries — and help the map grow.">
+<link rel="canonical" href="https://wisdomextractor.com/">
+<meta property="og:type" content="website">
+<meta property="og:site_name" content="The Wisdom Extractor">
+<meta property="og:url" content="https://wisdomextractor.com/">
+<meta property="og:title" content="The living map of human wisdom">
+<meta property="og:description" content="33,000 proverbs from 79 peoples, traced back to 1663. Which sayings carry the same idea? A computer can't tell — but you can. Judge a pair in 30 seconds.">
+<meta property="og:image" content="https://wisdomextractor.com/og-image.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta property="og:image:alt" content="The living map of human wisdom — 33,000 proverbs from 79 peoples">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:title" content="The living map of human wisdom">
+<meta name="twitter:description" content="33,000 proverbs from 79 peoples. Which sayings carry the same idea? A computer can't tell — but you can.">
+<meta name="twitter:image" content="https://wisdomextractor.com/og-image.png">
 <style>
 :root{--bg:#f7f6f2;--card:#fdfdfb;--ink:#171613;--ink2:#5a5850;--ink3:#8a877c;--line:#dedbd2;--accent:#2a78d6;--go:#1baf7a;--gold:#eda100}
 @media (prefers-color-scheme:dark){:root{--bg:#141412;--card:#1c1c19;--ink:#f2f1ea;--ink2:#b9b7ab;--ink3:#7f7d72;--line:#33322c;--accent:#3987e5;--go:#199e70;--gold:#c98500}}
@@ -41,6 +55,19 @@ h2{font-size:22px;margin:44px 0 6px}
   text-transform:uppercase;letter-spacing:.05em}
 @media (max-width:560px){.pair{grid-template-columns:1fr}.pair .eq{text-align:left}}
 .step a{color:var(--accent);text-decoration:none}
+.share{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:18px 20px;margin:34px 0 8px}
+.share h3{margin:0 0 4px;font-size:17px}
+.share p{margin:0 0 12px;color:var(--ink2);font-size:14.5px}
+.sharebtns{display:flex;flex-wrap:wrap;gap:9px}
+.sharebtns a,.sharebtns button{display:inline-flex;align-items:center;gap:7px;
+  font:inherit;font-size:14.5px;font-weight:600;text-decoration:none;cursor:pointer;
+  padding:10px 15px;border-radius:10px;border:1px solid var(--line);
+  background:var(--bg);color:var(--ink)}
+.sharebtns a:hover,.sharebtns button:hover{border-color:var(--accent);color:var(--accent)}
+.sharebtns .primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.sharebtns .primary:hover{filter:brightness(1.07);color:#fff}
+#copied{color:var(--go);font-size:13.5px;margin:10px 0 0;min-height:18px}
 footer{margin-top:52px;color:var(--ink3);font-size:14px;border-top:1px solid var(--line);padding-top:18px}
 footer a{color:var(--accent);text-decoration:none}
 </style>
@@ -124,6 +151,23 @@ footer a{color:var(--accent);text-decoration:none}
     this map from scratch.</p></div>
   </div>
 
+  <div class="share">
+    <h3>Know someone who would love this?</h3>
+    <p>Every person who judges a few pairs makes the map sharper. Sharing costs you one tap.</p>
+    <div class="sharebtns">
+      <button class="primary" id="btnNative" hidden onclick="nativeShare()">📤 Share</button>
+      <a id="sLinkedIn" target="_blank" rel="noopener">in LinkedIn</a>
+      <a id="sWhats" target="_blank" rel="noopener">💬 WhatsApp</a>
+      <a id="sFb" target="_blank" rel="noopener">f Facebook</a>
+      <a id="sX" target="_blank" rel="noopener">𝕏 Post</a>
+      <a id="sReddit" target="_blank" rel="noopener">🤖 Reddit</a>
+      <a id="sTg" target="_blank" rel="noopener">✈️ Telegram</a>
+      <a id="sMail">✉️ Email</a>
+      <button onclick="copyLink()">🔗 Copy link</button>
+    </div>
+    <p id="copied"></p>
+  </div>
+
   <footer>
     A research project by Vlad Belciug &amp; Elena Pelican (Ovidius University of Constanța) ·
     <a href="https://github.com/ovladon/wisdom-extractor">Source code</a> ·
@@ -133,6 +177,30 @@ footer a{color:var(--accent);text-decoration:none}
   </footer>
 </div>
 <script>
+(function(){
+  var url = "https://wisdomextractor.com/";
+  var title = "The living map of human wisdom";
+  var msg = "33,000 proverbs from 79 cultures. Which sayings carry the same idea? A computer can't tell \u2014 but you can. Judge a pair in 30 seconds:";
+  var u = encodeURIComponent(url), t = encodeURIComponent(title), m = encodeURIComponent(msg);
+  var set = function(id, href){ var e = document.getElementById(id); if(e) e.href = href; };
+  set("sLinkedIn", "https://www.linkedin.com/sharing/share-offsite/?url=" + u);
+  set("sWhats",    "https://wa.me/?text=" + m + "%20" + u);
+  set("sFb",       "https://www.facebook.com/sharer/sharer.php?u=" + u);
+  set("sX",        "https://twitter.com/intent/tweet?text=" + m + "&url=" + u);
+  set("sReddit",   "https://www.reddit.com/submit?url=" + u + "&title=" + t);
+  set("sTg",       "https://t.me/share/url?url=" + u + "&text=" + m);
+  set("sMail",     "mailto:?subject=" + t + "&body=" + m + "%0A%0A" + u);
+  if (navigator.share) { var b = document.getElementById("btnNative"); if(b) b.hidden = false; }
+  window.nativeShare = function(){
+    navigator.share({title: title, text: msg, url: url}).catch(function(){});
+  };
+  window.copyLink = function(){
+    var done = function(){ document.getElementById("copied").textContent = "Link copied. Thank you for passing it on."; };
+    if (navigator.clipboard) { navigator.clipboard.writeText(url).then(done, done); }
+    else { var i = document.createElement("input"); i.value = url; document.body.appendChild(i);
+           i.select(); try{document.execCommand("copy");}catch(e){} document.body.removeChild(i); done(); }
+  };
+})();
 fetch("https://annotate.wisdomextractor.com/api/pubstats").then(r=>r.json()).then(d=>{
   if(d.proverbs)document.getElementById("nProv").textContent=d.proverbs.toLocaleString("en-US");
   if(d.peoples)document.getElementById("nPeoples").textContent=d.peoples;

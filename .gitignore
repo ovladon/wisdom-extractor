@@ -11,3 +11,4 @@ dist/
 *.pdf
 *.docx
 data/live_snapshot.db
+landing/index.html.bak.*
