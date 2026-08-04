@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from core.persistence import (init_db, list_proverbs, add_constraint, add_duplicate_report,
-                              add_correction, claim_nickname, mark_sensitive,
+                              add_correction, claim_nickname, mark_sensitive, is_blocked,
                               mark_excluded,
                               list_constraints, stats, leaderboard, backfill_glosses,
                               annotator_uid)
@@ -156,6 +156,9 @@ def _check_nickname(name, request):
     if not claim_nickname(name, request.headers.get("x-annotator-key", "")):
         raise HTTPException(409, "that nickname is already taken on another device — "
                                  "please choose a different one")
+    if is_blocked(annotator_uid(name)):
+        raise HTTPException(403, "this account can no longer submit judgments — "
+                                 "contact the researchers if you think this is a mistake")
 
 
 def _check_human(request):

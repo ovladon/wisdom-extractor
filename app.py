@@ -5,7 +5,7 @@ clustering, diagnostics, interpretation) with the Wisdom Lab platform (v18: robu
 scraping, SQLite persistence, human annotation game), and fixes the defects of both.
 Run:  streamlit run app.py
 """
-import os, json, random, warnings
+import os, sys, json, random, warnings
 
 os.environ.setdefault("TF_CPP_MIN_LOG_LEVEL", "3")   # silence TensorFlow plugin chatter if installed
 warnings.filterwarnings("ignore", category=FutureWarning, module="sklearn")
@@ -663,64 +663,157 @@ with tabs[8]:
 
 # ---------------------------------------------------------------- 10) Admin / Status
 with tabs[9]:
-    st.subheader("Admin — everything that matters, in one place")
+    from core.persistence import (nickname_of, sensitive_reports_by_user, unflag_by_user,
+                                  block_annotator, unblock_annotator, list_annotators_admin,
+                                  purge_annotator)
+    from core.science import (alpha_with_ci, auc_with_ci, annotator_profile,
+                              overlap_stats, readiness)
+
+    st.subheader("Research status")
     st.caption(f"Database in use: `{_pers.DB_PATH}`")
-    from core.persistence import nickname_of
-    from core.annotation_quality import krippendorff_alpha_ordinal as _alpha_fn
 
     _cons = list_constraints()
-    _agg, _annot = aggregate_constraints(_cons)
-    _al, _units = _alpha_fn(_cons)
+    _agg, _annot_raw = aggregate_constraints(_cons)
     _must = sum(1 for x in _agg if x["label"] == "must")
     _cannot = sum(1 for x in _agg if x["label"] == "cannot")
+    _st = stats()
 
     c1, c2, c3, c4 = st.columns(4)
-    _st = stats()
     c1.metric("Active proverbs", f"{_st['proverbs']:,}")
     c2.metric("Peoples", _st["peoples"])
     c3.metric("Raw judgments", len(_cons))
-    c4.metric("Annotators", len(_annot))
-    c1.metric("Consensus pairs", len(_agg))
-    c2.metric("Same-idea / different", f"{_must} / {_cannot}")
-    c3.metric("Krippendorff α (ordinal)", f"{_al:.3f}" if _al is not None else "n/a",
-              help=f"over {_units} multi-annotated pairs")
-    c4.metric("Duplicate reports", _st.get("duplicate_reports", 0))
+    c4.metric("Consensus pairs", len(_agg))
 
-    _show_names = st.checkbox("Show annotator nicknames (uncheck before screen-sharing)",
-                              value=False)
-    st.markdown("**Annotators** — science and exports always use the pseudonym uid; "
-                "nicknames are display-only and hidden by default.")
-    _rows = [{**({"nickname": nickname_of(u) or "—"} if _show_names else {}),
-              "uid": u, "judgments": a["n"], "reliability": round(a["reliability"], 3)}
-             for u, a in sorted(_annot.items(), key=lambda kv: -kv[1]["n"])]
-    st.dataframe(pd.DataFrame(_rows), use_container_width=True, hide_index=True)
+    if not _cons:
+        st.info("No judgments yet — statistics appear once annotation starts.")
+    else:
+        with st.spinner("Computing statistics with confidence intervals…"):
+            _al = alpha_with_ci(_cons)
+            _ov = overlap_stats(_cons)
+            _an = annotator_profile(_cons)
+            _auc = st.session_state.get("_auc_cache", {"auc": None, "verdict": "not run"})
 
-    if st.button("Compute similarity AUC on consensus pairs (~1 min)"):
-        with st.spinner("Vectorizing full corpus and scoring pairs…"):
-            import numpy as _np
-            from scipy.stats import mannwhitneyu as _mwu
-            from sklearn.metrics.pairwise import cosine_similarity as _cos
-            from core.clustering import vectorize as _vec
-            _rows2 = {r["id"]: r for r in list_proverbs(with_claims_only=True)}
-            _ids = list(_rows2)
-            _X, _ = _vec([str(_rows2[i]["claim"]) for i in _ids])
-            _pos = {pid: k for k, pid in enumerate(_ids)}
-            _use = [(x["a_id"], x["b_id"], 1 if x["label"] == "must" else 0)
-                    for x in _agg if x["label"] in ("must", "cannot")
-                    and x["a_id"] in _pos and x["b_id"] in _pos]
-            _sims = _np.array([float(_cos(_X[_pos[a]], _X[_pos[b]])[0, 0]) for a, b, _l in _use])
-            _labs = _np.array([l for _a, _b, l in _use])
-            _n1, _n0 = int(_labs.sum()), int((_labs == 0).sum())
-            _u, _pv = _mwu(_sims[_labs == 1], _sims[_labs == 0], alternative="greater")
-        st.metric("AUC (char n-gram, corpus-fitted)", f"{_u / (_n1 * _n0):.4f}",
-                  help=f"{_n1} same-idea vs {_n0} different pairs, p = {_pv:.1e}")
+        # ---------- readiness ----------
+        _rd = readiness(_al, _auc, _ov, _an, len(_agg))
+        st.markdown("### Publication readiness — " + _rd["score"])
+        st.info(_rd["overall"])
+        _icon = {"green": "🟢", "amber": "🟡", "red": "🔴"}
+        for ch in _rd["checks"]:
+            with st.expander(f"{_icon[ch['status']]}  {ch['check']} — {ch['value']}"):
+                st.write(f"**Target:** {ch['target']}")
+                st.write(ch["action"])
 
+        st.markdown("---")
+        st.markdown("### The numbers, and what they mean")
+
+        # ---------- alpha ----------
+        m1, m2 = st.columns([1, 2])
+        m1.metric("Krippendorff's α (ordinal)",
+                  f"{_al['alpha']:.3f}" if _al["alpha"] is not None else "n/a",
+                  help="Agreement among annotators, corrected for chance, on the graded scale.")
+        if _al.get("lo") is not None:
+            m1.caption(f"95% CI: {_al['lo']} to {_al['hi']}  ·  {_al['n_units']} double-rated pairs")
+        m2.write(_al["meaning"])
+        if _al.get("needed_units"):
+            m2.warning(f"To make the lower bound clear 0.80, you need roughly "
+                       f"**{_al['needed_units']} double-rated pairs** in total "
+                       f"({max(0, _al['needed_units'] - _al['n_units'])} more), assuming "
+                       f"agreement holds at its current level.")
+
+        # ---------- separation (on demand: it vectorises the whole corpus) ----------
+        st.markdown("**Does the method match human judgment?**")
+        if st.button("Compute AUC with confidence interval (~1 min)"):
+            with st.spinner("Vectorising the corpus and scoring judged pairs…"):
+                from sklearn.metrics.pairwise import cosine_similarity as _cos
+                from core.clustering import vectorize as _vec
+                _rows2 = {r["id"]: r for r in list_proverbs(with_claims_only=True)}
+                _ids = list(_rows2)
+                _X, _ = _vec([str(_rows2[i]["claim"]) for i in _ids])
+                _pos = {pid: k for k, pid in enumerate(_ids)}
+                _use = [(x["a_id"], x["b_id"], 1 if x["label"] == "must" else 0)
+                        for x in _agg if x["label"] in ("must", "cannot")
+                        and x["a_id"] in _pos and x["b_id"] in _pos]
+                _sims = [float(_cos(_X[_pos[a]], _X[_pos[b]])[0, 0]) for a, b, _l in _use]
+                _labs = [l for _a, _b, l in _use]
+                st.session_state["_auc_cache"] = auc_with_ci(_sims, _labs)
+            st.rerun()
+        if _auc.get("auc") is not None:
+            a1, a2 = st.columns([1, 2])
+            a1.metric("AUC", f"{_auc['auc']:.3f}")
+            a1.caption(f"95% CI: {_auc['lo']} to {_auc['hi']}  ·  "
+                       f"{_auc['n_pos']} same / {_auc['n_neg']} different")
+            a2.write(_auc["meaning"])
+            if _auc.get("needed_pairs"):
+                a2.warning(f"For the lower bound to clear 0.80, roughly "
+                           f"**{_auc['needed_pairs']} judged pairs** would be needed.")
+        else:
+            st.caption("Not computed in this session — press the button above.")
+
+        # ---------- overlap + independence ----------
+        o1, o2 = st.columns(2)
+        with o1:
+            st.metric("Double-rated pairs", _ov["multi_rated"],
+                      help="Pairs judged independently by two or more people. "
+                           "Every agreement statistic rests on these alone.")
+            st.caption(f"{_ov['overlap_rate']*100:.0f}% of {_ov['n_pairs']} judged pairs")
+            st.write(_ov["meaning"])
+        with o2:
+            st.metric("Active annotators", _an["n_annotators"],
+                      help="Independence matters: if one person supplies most judgments, "
+                           "consensus mostly reflects that person.")
+            st.caption(f"largest single share: {_an['top_share']*100:.0f}%")
+            st.write(_an["meaning"])
+        if _an["outliers"]:
+            st.warning("Annotators well out of step with consensus (check before trusting "
+                       "their data): " + ", ".join(f"{o['uid']} (reliability {o['reliability']})"
+                                                   for o in _an["outliers"]))
+
+        st.markdown("**Per-annotator detail** — uid is the pseudonym used in all exports.")
+        _show_names = st.checkbox("Show nicknames (uncheck before screen-sharing)", value=False)
+        st.dataframe(pd.DataFrame([
+            {**({"nickname": nickname_of(r["uid"]) or "—"} if _show_names else {}),
+             "uid": r["uid"], "judgments": r["judgments"],
+             "share": f"{r['share']*100:.0f}%", "reliability": r["reliability"]}
+            for r in _an["rows"]]), use_container_width=True, hide_index=True)
+
+    # ---------- moderation ----------
+    st.markdown("---")
+    st.markdown("### Moderation")
+    st.caption("Blocking stops future submissions and leaves existing data intact. "
+               "Purging deletes an account's judgments and cannot be undone.")
+    _accounts = list_annotators_admin()
+    if _accounts:
+        st.dataframe(pd.DataFrame([
+            {**({"nickname": a["nickname"] or "—"} if st.session_state.get("_mod_names") else {}),
+             "uid": a["uid"], "judgments": a["judgments"],
+             "status": "BLOCKED" if a["blocked"] else "active",
+             "reason": a["block_reason"]} for a in _accounts]),
+            use_container_width=True, hide_index=True)
+        st.checkbox("Show nicknames in the moderation table", key="_mod_names")
+        _pick = st.selectbox("Account", [a["uid"] for a in _accounts],
+                             format_func=lambda u: f"{nickname_of(u) or u} ({u})")
+        _cur = next((a for a in _accounts if a["uid"] == _pick), None)
+        b1, b2, b3 = st.columns(3)
+        with b1:
+            _reason = st.text_input("Reason (recorded)", placeholder="e.g. random clicking")
+            if st.button("🚫 Block account", disabled=bool(_cur and _cur["blocked"])):
+                block_annotator(_pick, _reason)
+                st.success("Blocked. They can no longer submit."); st.rerun()
+        with b2:
+            if st.button("✅ Unblock", disabled=not (_cur and _cur["blocked"])):
+                unblock_annotator(_pick); st.success("Unblocked."); st.rerun()
+        with b3:
+            _confirm = st.text_input("Type DELETE to confirm purge", key="_purge_confirm")
+            if st.button("🗑 Purge judgments", disabled=_confirm != "DELETE"):
+                _n = purge_annotator(_pick)
+                st.warning(f"Deleted {_n} judgments from {_pick}."); st.rerun()
+    else:
+        st.caption("No annotator accounts yet.")
+
+    # ---------- hidden content ----------
     st.markdown("---")
     st.markdown("**Hidden proverbs (adult language)** — kept in the corpus, withheld from "
-                "the game and the public map. Automatic word-list hides plus annotator "
-                "reports. Every report is attributable, so one account can be reverted.")
-    from core.persistence import sensitive_reports_by_user, unflag_by_user, nickname_of as _nick
-    _c = connect_stats = None
+                "the game and the public map.")
     import sqlite3 as _sq
     _con = _sq.connect(_pers.DB_PATH)
     _hidden = _con.execute("SELECT COUNT(*) FROM proverbs WHERE COALESCE(sensitive,0)=1").fetchone()[0]
@@ -728,33 +821,30 @@ with tabs[9]:
     st.metric("Currently hidden", f"{_hidden:,}")
     _reps = sensitive_reports_by_user()
     if _reps:
-        st.dataframe(pd.DataFrame([{"annotator": _nick(r["user"]) or r["user"],
-                                    "uid": r["user"], "hidden": r["n"]} for r in _reps]),
+        st.dataframe(pd.DataFrame([{"uid": r["user"], "hidden": r["n"]} for r in _reps]),
                      use_container_width=True, hide_index=True)
-        _who = st.selectbox("Revert all hides by", [r["user"] for r in _reps],
-                            format_func=lambda u: f"{_nick(u) or u} ({u})")
+        _who = st.selectbox("Revert all hides by", [r["user"] for r in _reps])
         if st.button("↩︎ Revert this annotator's hides"):
             _n = unflag_by_user(_who)
-            st.success(f"Reverted {_n} proverbs. (Ones the word list catches, or that "
-                       f"someone else also reported, stay hidden.)")
+            st.success(f"Reverted {_n} proverbs. (Word-list hides and pairs someone else "
+                       f"also reported stay hidden.)")
     else:
         st.caption("No annotator reports yet — everything hidden came from the word list.")
 
+    # ---------- canonicalization misses ----------
     st.markdown("---")
     st.markdown("**Canonicalization misses** — where human judgments disagree with the "
                 "method. Each *miss* (judged the same, low similarity) is a candidate for a "
                 "new rule; each *over-merge* (judged different, high similarity) flags a rule "
-                "to restrain. This is the read-only first step of turning annotations into "
-                "better canonicalization.")
+                "to restrain.")
     if st.button("Find canonicalization misses"):
         with st.spinner("Comparing human links against the current claims…"):
             sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
             from scripts.canon_misses import find_misses
             _misses, _over = find_misses()
-        st.write(f"**{len(_misses)} misses** — judged the same idea, but claims are far apart "
-                 "(a rule is missing that should merge them):")
+        st.write(f"**{len(_misses)} misses** — judged the same idea, but claims are far apart:")
         if _misses:
             st.dataframe(pd.DataFrame(_misses), use_container_width=True, hide_index=True)
-        st.write(f"**{len(_over)} over-merges** — judged different, but claims are near-identical:")
+        st.write(f"**{len(_over)} over-merges** — judged different, but claims near-identical:")
         if _over:
             st.dataframe(pd.DataFrame(_over), use_container_width=True, hide_index=True)

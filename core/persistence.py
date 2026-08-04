@@ -82,8 +82,13 @@ def init_db():
         if col not in have:
             cur.execute(f"ALTER TABLE proverbs ADD COLUMN {col} {typ}")
     cur.execute("PRAGMA table_info(annotators)")
-    if "key_hash" not in {r[1] for r in cur.fetchall()}:
+    _acols = {r[1] for r in cur.fetchall()}
+    if "key_hash" not in _acols:
         cur.execute("ALTER TABLE annotators ADD COLUMN key_hash TEXT")
+    if "blocked" not in _acols:
+        cur.execute("ALTER TABLE annotators ADD COLUMN blocked INTEGER DEFAULT 0")
+        cur.execute("ALTER TABLE annotators ADD COLUMN block_reason TEXT")
+        cur.execute("ALTER TABLE annotators ADD COLUMN blocked_at REAL")
     # graded semantic-equivalence score (Pelican scale: 4..0 and -1), alongside legacy label
     cur.execute("PRAGMA table_info(constraints)")
     if "score" not in {r[1] for r in cur.fetchall()}:
@@ -434,6 +439,52 @@ def mark_sensitive(pid, user=None):
     con.execute("INSERT OR IGNORE INTO sensitive_reports(pid,user,created_at) VALUES(?,?,?)",
                 (pid, user or "(unknown)", time.time()))
     con.commit(); con.close()
+
+
+def block_annotator(uid, reason=""):
+    """Stop an account from submitting. Existing judgments are left untouched:
+    removing data is a separate, deliberate decision (see purge_annotator)."""
+    con = connect()
+    con.execute("UPDATE annotators SET blocked=1, block_reason=?, blocked_at=? WHERE uid=?",
+                (reason or "", time.time(), uid))
+    con.commit(); con.close()
+
+
+def unblock_annotator(uid):
+    con = connect()
+    con.execute("UPDATE annotators SET blocked=0, block_reason=NULL, blocked_at=NULL "
+                "WHERE uid=?", (uid,))
+    con.commit(); con.close()
+
+
+def is_blocked(uid):
+    con = connect()
+    row = con.execute("SELECT COALESCE(blocked,0) FROM annotators WHERE uid=?", (uid,)).fetchone()
+    con.close()
+    return bool(row and row[0])
+
+
+def list_annotators_admin():
+    """Every account with volume, block state and reason, for the moderation table."""
+    con = connect(); con.row_factory = sqlite3.Row
+    rows = [dict(r) for r in con.execute(
+        """SELECT a.uid, a.nickname, COALESCE(a.blocked,0) AS blocked,
+                  COALESCE(a.block_reason,'') AS block_reason, a.created_at,
+                  (SELECT COUNT(*) FROM constraints c WHERE c.user = a.uid) AS judgments
+           FROM annotators a ORDER BY judgments DESC""")]
+    con.close(); return rows
+
+
+def purge_annotator(uid):
+    """Delete every judgment by one account. Destructive and irreversible: use when
+    an account's data is untrustworthy, not merely unwanted. Returns rows removed."""
+    con = connect(); cur = con.cursor()
+    n = cur.execute("SELECT COUNT(*) FROM constraints WHERE user=?", (uid,)).fetchone()[0]
+    cur.execute("DELETE FROM constraints WHERE user=?", (uid,))
+    cur.execute("DELETE FROM duplicate_reports WHERE user=?", (uid,))
+    cur.execute("DELETE FROM sensitive_reports WHERE user=?", (uid,))
+    con.commit(); con.close()
+    return n
 
 
 def sensitive_reports_by_user():

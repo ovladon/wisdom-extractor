@@ -4,6 +4,20 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.26 — 2026-08-04
+- **Admin tab rebuilt as a research-status dashboard** (new core/science.py).
+  Every headline statistic now carries uncertainty and a plain-language reading:
+  Krippendorff's alpha with a bootstrap CI over units, AUC with a Hanley-McNeil
+  CI, double-rating overlap, annotator-concentration check, and a five-point
+  publication-readiness checklist that says what is missing and how much more of
+  it is needed.
+- Sample-size guidance is derived from the current estimates, so it answers "how
+  many more of these do I need" rather than quoting a textbook number.
+- **Moderation**: block or unblock an account (blocked accounts are refused by the
+  API on every write path), with the reason recorded, plus a confirmed purge that
+  deletes an account's judgments. Blocking leaves data intact; purging is explicit
+  and irreversible.
+
 ## v19.25 — 2026-08-04
 - **Hardened the adult-language report against abuse.** It was the least-guarded
   endpoint: IP rate-limit only, no per-user cap, no record of who reported what.
