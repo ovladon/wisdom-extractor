@@ -11,4 +11,7 @@ dist/
 *.pdf
 *.docx
 data/live_snapshot.db
-landing/index.html.bak.*
+backups/
+*.bak
+*.bak[0-9].*
+*.bak.*
