@@ -4,6 +4,15 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.25 — 2026-08-04
+- **Hardened the adult-language report against abuse.** It was the least-guarded
+  endpoint: IP rate-limit only, no per-user cap, no record of who reported what.
+  Now it requires a claimed nickname, caps at 20 hides per annotator per day, and
+  writes an attributable row for every report.
+- **One-command revert**: Admin tab lists who has hidden how much and reverts an
+  account's hides wholesale. Proverbs the word list catches, or that a second
+  annotator also reported, stay hidden.
+
 ## v19.24 — 2026-08-04
 - **Adult language hidden from public surfaces.** New `sensitive` flag: proverbs
   with unambiguous adult vocabulary stay in the corpus (removing them would censor

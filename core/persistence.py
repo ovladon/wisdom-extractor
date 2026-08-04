@@ -65,6 +65,10 @@ def init_db():
       a_id INTEGER, b_id INTEGER, user TEXT, created_at REAL,
       UNIQUE(a_id, b_id, user)
     );
+    CREATE TABLE IF NOT EXISTS sensitive_reports(
+      pid INTEGER, user TEXT, created_at REAL,
+      UNIQUE(pid, user)
+    );
     CREATE TABLE IF NOT EXISTS corrections(
       id INTEGER PRIMARY KEY AUTOINCREMENT,
       pid INTEGER, old_text TEXT, new_text TEXT, user TEXT,
@@ -423,10 +427,43 @@ def flag_sensitive_auto():
 
 
 def mark_sensitive(pid, user=None):
-    """Human report: hide a proverb from public surfaces."""
+    """Human report: hide a proverb from public surfaces, and record who asked.
+    Every report is attributable so a single bad actor can be reverted wholesale."""
     con = connect()
     con.execute("UPDATE proverbs SET sensitive=1 WHERE id=?", (pid,))
+    con.execute("INSERT OR IGNORE INTO sensitive_reports(pid,user,created_at) VALUES(?,?,?)",
+                (pid, user or "(unknown)", time.time()))
     con.commit(); con.close()
+
+
+def sensitive_reports_by_user():
+    """Who has hidden how much, most recent first. For the admin review screen."""
+    con = connect(); con.row_factory = sqlite3.Row
+    rows = [dict(r) for r in con.execute(
+        "SELECT user, COUNT(*) AS n, MAX(created_at) AS last_at "
+        "FROM sensitive_reports GROUP BY user ORDER BY n DESC")]
+    con.close(); return rows
+
+
+def unflag_by_user(user):
+    """Revert every hide requested by one annotator. Proverbs flagged by the
+    automatic word list, or also reported by somebody else, stay hidden."""
+    con = connect(); cur = con.cursor()
+    pids = [r[0] for r in cur.execute(
+        "SELECT pid FROM sensitive_reports WHERE user=?", (user,)).fetchall()]
+    reverted = 0
+    for pid in pids:
+        others = cur.execute("SELECT COUNT(*) FROM sensitive_reports "
+                             "WHERE pid=? AND user!=?", (pid, user)).fetchone()[0]
+        row = cur.execute("SELECT text, COALESCE(gloss,'') FROM proverbs WHERE id=?",
+                          (pid,)).fetchone()
+        auto = bool(row) and bool(EXPLICIT_RX.search((row[0] or "") + " " + (row[1] or "")))
+        if not others and not auto:
+            cur.execute("UPDATE proverbs SET sensitive=0 WHERE id=?", (pid,))
+            reverted += 1
+    cur.execute("DELETE FROM sensitive_reports WHERE user=?", (user,))
+    con.commit(); con.close()
+    return reverted
 
 
 def add_correction(pid, new_text, user):

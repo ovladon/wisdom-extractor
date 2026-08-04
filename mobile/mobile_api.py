@@ -32,9 +32,11 @@ CODE = os.environ.get("ANNOTATOR_CODE", "")
 RATE_WINDOW = 60          # seconds
 RATE_MAX = 90             # requests per window per client (fast annotators stay well under)
 EXCLUDE_DAILY_MAX = 30    # "not a saying" reports per user per day
+FLAG_DAILY_MAX = 20       # adult-language hides per user per day
 BAD_CODE_MAX = 20         # wrong access-code attempts per client per hour
 _hits = defaultdict(deque)
 _excludes = defaultdict(deque)
+_flags = defaultdict(deque)
 _bad_codes = defaultdict(deque)
 
 # --- human check: finish the proverb ---
@@ -89,6 +91,17 @@ def _exclude_check(user):
     if len(q) >= EXCLUDE_DAILY_MAX:
         raise HTTPException(429, "daily 'not a saying' limit reached — thank you, that's plenty")
     q.append(now)
+
+def _flag_check(user):
+    now = time.time()
+    q = _flags[user]
+    while q and now - q[0] > 86400:
+        q.popleft()
+    if len(q) >= FLAG_DAILY_MAX:
+        raise HTTPException(429, "daily limit for hiding pairs reached — thank you, "
+                                 "that's plenty for one day")
+    q.append(now)
+
 
 app = FastAPI(title="Wisdom Lab mobile", docs_url=None, redoc_url=None)
 init_db()
@@ -339,11 +352,18 @@ class Flag(BaseModel):
 
 @app.post("/api/flag")
 def flag_adult(f: Flag, request: Request):
-    """Annotator reports adult content: hidden from the game and the public map."""
+    """Annotator reports adult content: hidden from the game and the public map.
+    Attributable and capped, so one bad actor cannot empty the corpus."""
     _rate_check(_client_key(request))
     _check_code(f.code, request)
     _check_human(request)
-    mark_sensitive(f.pid)
+    nick = (f.user or "").strip()[:40]
+    if len(nick) < 2:
+        raise HTTPException(400, "please set a name (2+ characters)")
+    _check_nickname(nick, request)
+    uid = annotator_uid(nick)
+    _flag_check(uid)
+    mark_sensitive(f.pid, uid)
     return {"ok": True}
 
 

@@ -155,7 +155,7 @@ seed_sources_if_empty()
 
 PROVERB_FIELDS = ["id", "text", "people", "language", "family", "region", "original",
                   "claim", "gloss", "quality_score", "cluster_id", "first_seen", "last_seen",
-                  "url", "excluded"]
+                  "url", "excluded", "sensitive"]
 
 
 @st.cache_data(show_spinner=False)
@@ -714,6 +714,31 @@ with tabs[9]:
             _u, _pv = _mwu(_sims[_labs == 1], _sims[_labs == 0], alternative="greater")
         st.metric("AUC (char n-gram, corpus-fitted)", f"{_u / (_n1 * _n0):.4f}",
                   help=f"{_n1} same-idea vs {_n0} different pairs, p = {_pv:.1e}")
+
+    st.markdown("---")
+    st.markdown("**Hidden proverbs (adult language)** — kept in the corpus, withheld from "
+                "the game and the public map. Automatic word-list hides plus annotator "
+                "reports. Every report is attributable, so one account can be reverted.")
+    from core.persistence import sensitive_reports_by_user, unflag_by_user, nickname_of as _nick
+    _c = connect_stats = None
+    import sqlite3 as _sq
+    _con = _sq.connect(_pers.DB_PATH)
+    _hidden = _con.execute("SELECT COUNT(*) FROM proverbs WHERE COALESCE(sensitive,0)=1").fetchone()[0]
+    _con.close()
+    st.metric("Currently hidden", f"{_hidden:,}")
+    _reps = sensitive_reports_by_user()
+    if _reps:
+        st.dataframe(pd.DataFrame([{"annotator": _nick(r["user"]) or r["user"],
+                                    "uid": r["user"], "hidden": r["n"]} for r in _reps]),
+                     use_container_width=True, hide_index=True)
+        _who = st.selectbox("Revert all hides by", [r["user"] for r in _reps],
+                            format_func=lambda u: f"{_nick(u) or u} ({u})")
+        if st.button("↩︎ Revert this annotator's hides"):
+            _n = unflag_by_user(_who)
+            st.success(f"Reverted {_n} proverbs. (Ones the word list catches, or that "
+                       f"someone else also reported, stay hidden.)")
+    else:
+        st.caption("No annotator reports yet — everything hidden came from the word list.")
 
     st.markdown("---")
     st.markdown("**Canonicalization misses** — where human judgments disagree with the "
