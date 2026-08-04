@@ -161,28 +161,6 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
     <div><b id="stRel">—</b><span>consistency</span></div>
   </div>
   <table id="lb"><tr><th>#</th><th>annotator</th><th>total</th></tr></table>
-
-  <div style="background:var(--card);border:1px solid var(--line);border-radius:12px;
-              padding:14px 16px;margin:18px 0 4px">
-    <p style="margin:0 0 4px;font-weight:650;font-size:15px">Bring someone in 🌱</p>
-    <p style="margin:0 0 10px;color:var(--ink2);font-size:13.5px">
-      Every extra pair of eyes makes the map sharper. Your link fills in the access code
-      for them, so they can start straight away.</p>
-    <div style="display:flex;flex-wrap:wrap;gap:8px">
-      <button id="bShare" hidden onclick="shareApp()"
-        style="background:var(--accent);flex:1 1 100%">📤 Share the game</button>
-      <a id="shWhats" target="_blank" rel="noopener" style="flex:1;text-align:center;
-        background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;
-        padding:11px 8px;text-decoration:none;font-size:13.5px;font-weight:600">💬 WhatsApp</a>
-      <a id="shLi" target="_blank" rel="noopener" style="flex:1;text-align:center;
-        background:var(--card);color:var(--ink);border:1px solid var(--line);border-radius:12px;
-        padding:11px 8px;text-decoration:none;font-size:13.5px;font-weight:600">in LinkedIn</a>
-      <button onclick="copyInvite()" style="flex:1;background:var(--card);color:var(--ink);
-        border:1px solid var(--line);font-size:13.5px;font-weight:600;padding:11px 8px">🔗 Copy link</button>
-    </div>
-    <p id="shMsg" style="color:var(--same);font-size:12.5px;min-height:16px;margin:9px 0 0"></p>
-  </div>
-
   <p style="margin-top:14px"><button onclick="showGame()">← Back to judging</button></p>
 </div>
 
@@ -206,9 +184,6 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
 <script>
 let user=localStorage.getItem("wl_name")||"", code=localStorage.getItem("wl_code")||"";
 let human=localStorage.getItem("wl_human")||"", codeRequired=true, challengeId=null;
-try{ var _q=new URLSearchParams(location.search);
-      var _c=_q.get("code")||_q.get("c");
-      if(_c){ code=_c.trim(); localStorage.setItem("wl_code",code); } }catch(e){}
 let akey=localStorage.getItem("wl_akey")||"";
 if(!akey){akey=(self.crypto&&crypto.randomUUID)?crypto.randomUUID()
   :String(Math.random()).slice(2)+Date.now();localStorage.setItem("wl_akey",akey);}
@@ -363,7 +338,6 @@ async function showBoard(){
   $("stTotal").textContent=d.total;
   $("stRank").textContent=d.rank?("#"+d.rank):"—";
   $("stRel").textContent=d.reliability!=null?d.reliability.toFixed(2):"—";
-  wireShare();
   const t=$("lb");t.innerHTML="<tr><th>#</th><th>annotator</th><th>total</th></tr>";
   d.leaderboard.forEach((r,i)=>{
     const tr=document.createElement("tr");
@@ -375,34 +349,6 @@ async function showBoard(){
 }
 function showGame(){$("board").classList.add("hidden");$("game").classList.remove("hidden");}
 
-function inviteURL(){
-  var u = "https://annotate.wisdomextractor.com/";
-  return code ? u + "?code=" + encodeURIComponent(code) : u;
-}
-function inviteText(){
-  var n = parseInt(($("stTotal")||{}).textContent, 10) || 0;
-  var mine = n > 0 ? "I have judged " + n + " pairs of proverbs so far. " : "";
-  return mine + "Two sayings from two cultures: same idea, or not? A computer cannot tell, "
-       + "but you can. Thirty seconds a pair, and it sharpens a public map of human wisdom.";
-}
-function wireShare(){
-  var url = inviteURL(), txt = inviteText();
-  var u = encodeURIComponent(url), t = encodeURIComponent(txt);
-  var w = $("shWhats"), l = $("shLi");
-  if(w) w.href = "https://wa.me/?text=" + t + "%20" + u;
-  if(l) l.href = "https://www.linkedin.com/sharing/share-offsite/?url=" + encodeURIComponent("https://wisdomextractor.com/");
-  if(navigator.share){ var b=$("bShare"); if(b) b.hidden=false; }
-}
-function shareApp(){
-  navigator.share({title:"Wisdom Lab", text:inviteText(), url:inviteURL()}).catch(function(){});
-}
-function copyInvite(){
-  var full = inviteText() + " " + inviteURL();
-  var done = function(){ $("shMsg").textContent = "Copied. Thank you for passing it on!"; };
-  if(navigator.clipboard){ navigator.clipboard.writeText(full).then(done, done); }
-  else { var i=document.createElement("textarea"); i.value=full; document.body.appendChild(i);
-         i.select(); try{document.execCommand("copy");}catch(e){} document.body.removeChild(i); done(); }
-}
 async function start(){
   user=$("inName").value.trim();code=$("inCode").value.trim();
   if(user.length<2){$("setupMsg").textContent="Please enter your name or nickname (at least 2 letters).";return;}
@@ -422,11 +368,7 @@ async function boot(){
 (async()=>{
   try{const c=await (await fetch("/api/config")).json();codeRequired=c.code_required;
       if(!codeRequired)$("inCode").placeholder="Access code (not needed here)";}catch(e){}
-  if(code){ $("inCode").value=code;
-    var n=$("setupMsg"); n.style.color="var(--same)";
-    n.textContent="Access code filled in from your link ✓ just pick a nickname."; }
   if(user){$("inName").value=user;$("inCode").value=code;boot();}
-  else{ $("inName").focus(); }
 })();
 </script>
 </body>

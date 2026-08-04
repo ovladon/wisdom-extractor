@@ -4,6 +4,17 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.23 — 2026-08-03
+- **Sharing, so the game can spread.** Standing screen gains an invite block:
+  native share sheet on mobile, WhatsApp, LinkedIn, copy-link — the message is
+  personalised with the sharer's judgment count.
+- **Access code travels in the link** (`/?code=...`), stored on arrival, with a
+  green confirmation on the setup screen. Invitees no longer need to be told a
+  code out of band; they only pick a nickname.
+- Landing: Open Graph/Twitter preview card (og-image.png) so pasted links render
+  as a titled card; one-tap share row; Play button and /play redirect now carry
+  the code.
+
 ## v19.22 — 2026-07-23
 - **Live-first analysis app**: app.py now auto-syncs a snapshot of the server
   database on launch (10-min freshness window, manual refresh button, graceful

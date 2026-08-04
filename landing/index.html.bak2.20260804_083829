@@ -83,7 +83,7 @@ footer a{color:var(--accent);text-decoration:none}
 
   <div class="ctas">
     <a class="cta map" href="/map">🌍 Explore the living map</a>
-    <a class="cta play" href="/play?code=proverbe">🧭 Play — judge a pair of proverbs</a>
+    <a class="cta play" href="/play">🧭 Play — judge a pair of proverbs</a>
   </div>
   <p class="ctanote">The map: pick any motif and watch its trail across cultures — drag the time
   slider to replay its documented record through the centuries. The game: thirty seconds on your
@@ -180,7 +180,7 @@ footer a{color:var(--accent);text-decoration:none}
 (function(){
   var url = "https://wisdomextractor.com/";
   var title = "The living map of human wisdom";
-  var msg = "33,000 proverbs from 79 cultures. Which sayings carry the same idea? A computer can't tell, but you can. Press Play, pick a nickname, and judge a pair in 30 seconds:";
+  var msg = "33,000 proverbs from 79 cultures. Which sayings carry the same idea? A computer can't tell \u2014 but you can. Judge a pair in 30 seconds:";
   var u = encodeURIComponent(url), t = encodeURIComponent(title), m = encodeURIComponent(msg);
   var set = function(id, href){ var e = document.getElementById(id); if(e) e.href = href; };
   set("sLinkedIn", "https://www.linkedin.com/sharing/share-offsite/?url=" + u);
