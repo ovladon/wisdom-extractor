@@ -640,7 +640,16 @@ with tabs[8]:
     st.header("Export")
     df = cached_proverbs(st.session_state["db_version"])
     st.subheader("Leaderboard")
-    st.dataframe(pd.DataFrame(leaderboard()))
+    st.caption("Nicknames are display-only and hidden by default, so this tab is safe to "
+               "show on a shared screen. Exports below never contain them: judgments carry "
+               "the pseudonym uid only.")
+    _lb_names = st.checkbox("Show nicknames", value=False, key="_lb_names")
+    _lb = pd.DataFrame(leaderboard())
+    if not _lb.empty and not _lb_names:
+        _first = _lb.columns[0]
+        _lb = _lb.copy()
+        _lb[_first] = [f"annotator {i+1}" for i in range(len(_lb))]
+    st.dataframe(_lb, use_container_width=True, hide_index=True)
     st.subheader("Downloads")
     if not df.empty:
         st.download_button("proverbs.csv", df.to_csv(index=False), "proverbs.csv", "text/csv")
@@ -655,10 +664,13 @@ with tabs[8]:
     st.download_button("annotation_export.json",
                        json.dumps(export_annotations(), ensure_ascii=False, indent=2),
                        "annotation_export.json", "application/json")
-    db_path = os.environ.get("WISDOM_DB_PATH", "wisdom.db")
+    db_path = _pers.DB_PATH
     if os.path.exists(db_path):
+        st.caption("⚠️ The raw database contains the nickname↔uid table. Share the CSV/JSON "
+                   "exports instead — those are already pseudonymised.")
         with open(db_path, "rb") as f:
-            st.download_button("wisdom.db", f.read(), "wisdom.db", "application/octet-stream")
+            st.download_button("wisdom.db (internal use)", f.read(), "wisdom.db",
+                               "application/octet-stream")
 
 
 # ---------------------------------------------------------------- 10) Admin / Status
