@@ -4,6 +4,18 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.24 — 2026-08-04
+- **Adult language hidden from public surfaces.** New `sensitive` flag: proverbs
+  with unambiguous adult vocabulary stay in the corpus (removing them would censor
+  the scientific record and these are real folk sayings) but are never served to
+  annotators and never drawn on the public map. 106 flagged on the live corpus,
+  0.3%, mostly earthy Finnish folk material.
+- The word list is deliberately narrow: "ass" (donkey), "cock" (rooster) and
+  "bitch" (female dog) are ordinary in historical collections and are NOT matched.
+  A "🔞 Adult language" report button in the app catches what the list misses,
+  hiding both proverbs of the pair immediately.
+- Auto-flagging runs in every maintenance cycle, so new ingests are covered.
+
 ## v19.23 — 2026-08-03
 - **Sharing, so the game can spread.** Standing screen gains an invite block:
   native share sheet on mobile, WhatsApp, LinkedIn, copy-link — the message is

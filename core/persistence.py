@@ -25,6 +25,7 @@ PROVERB_COLUMNS = [
     ("url", "TEXT"),
     ("hash", "TEXT UNIQUE"),
     ("excluded", "INTEGER DEFAULT 0"),
+    ("sensitive", "INTEGER DEFAULT 0"),   # adult language: kept in the corpus, hidden from public surfaces
     ("added_at", "REAL"),
 ]
 
@@ -196,7 +197,8 @@ def bulk_insert_proverbs(rows):
 def list_proverbs(excluded=False, with_claims_only=False):
     con = connect(); cur = con.cursor()
     q = """SELECT id,text,people,language,family,region,original,claim,gloss,quality_score,
-                  cluster_id,first_seen,last_seen,url,excluded FROM proverbs"""
+                  cluster_id,first_seen,last_seen,url,excluded,
+                  COALESCE(sensitive,0) AS sensitive FROM proverbs"""
     conds = []
     if not excluded:
         conds.append("excluded=0")
@@ -207,7 +209,8 @@ def list_proverbs(excluded=False, with_claims_only=False):
     cur.execute(q)
     rows = cur.fetchall(); con.close()
     keys = ["id", "text", "people", "language", "family", "region", "original", "claim", "gloss",
-            "quality_score", "cluster_id", "first_seen", "last_seen", "url", "excluded"]
+            "quality_score", "cluster_id", "first_seen", "last_seen", "url", "excluded",
+            "sensitive"]
     return [dict(zip(keys, r)) for r in rows]
 
 
@@ -390,6 +393,39 @@ def add_duplicate_report(a_id, b_id, user):
     con = connect()
     con.execute("INSERT OR IGNORE INTO duplicate_reports(a_id,b_id,user,created_at) "
                 "VALUES(?,?,?,?)", (a, b, user, _t.time()))
+    con.commit(); con.close()
+
+
+# Unambiguous adult vocabulary. Deliberately NARROW: words like "ass" (donkey),
+# "cock" (rooster) and "bitch" (female dog) are ordinary in historical proverb
+# collections, so they are NOT listed here — human reports catch what this misses.
+EXPLICIT_RX = re.compile(
+    r"\b(fuck\w*|cunt\w*|shit\w*|shitty|piss\w*|whore\w*|slut\w*|penis|dick|dicks|"
+    r"vagina|testicl\w*|semen|masturbat\w*|copulat\w*|fornicat\w*|prostitut\w*|"
+    r"brothel|harlot\w*|buttocks|anus|erection|orgasm|genital\w*|arsehole|asshole)\b",
+    re.I)
+
+
+def flag_sensitive_auto():
+    """Mark proverbs containing unambiguous adult language. They stay in the corpus
+    (removing them would censor the scientific record); they are simply not served
+    to annotators or drawn on the public map. Idempotent; returns newly flagged."""
+    con = connect(); cur = con.cursor()
+    n = 0
+    for pid, text, gloss in cur.execute(
+            "SELECT id, text, COALESCE(gloss,'') FROM proverbs "
+            "WHERE COALESCE(sensitive,0)=0").fetchall():
+        if EXPLICIT_RX.search((text or "") + " " + (gloss or "")):
+            con.execute("UPDATE proverbs SET sensitive=1 WHERE id=?", (pid,))
+            n += 1
+    con.commit(); con.close()
+    return n
+
+
+def mark_sensitive(pid, user=None):
+    """Human report: hide a proverb from public surfaces."""
+    con = connect()
+    con.execute("UPDATE proverbs SET sensitive=1 WHERE id=?", (pid,))
     con.commit(); con.close()
 
 

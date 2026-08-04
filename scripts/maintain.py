@@ -31,7 +31,7 @@ from core.canonicalize import canonicalize
 from core.clustering import cluster_texts
 from core.annotation_quality import aggregate_constraints, constraint_pairs_for_clustering
 from core.persistence import (merge_reported_duplicates, fix_ocr_artifacts,
-                              apply_corrections, dedup_normalized)
+                              apply_corrections, dedup_normalized, flag_sensitive_auto)
 
 DATA_DIR = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "data")
 
@@ -100,6 +100,7 @@ def main():
         summary["scrape"] = scrape_next(args.scrape, args.source)
         print("scrape:", summary["scrape"])
 
+    summary["sensitive_flagged"] = flag_sensitive_auto()
     summary["ocr_fixed"] = fix_ocr_artifacts()
     summary["corrections_applied"] = apply_corrections()
     summary["dedup_excluded"] = dedup_normalized()

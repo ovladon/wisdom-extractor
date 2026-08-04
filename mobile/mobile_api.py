@@ -18,7 +18,7 @@ from fastapi.responses import FileResponse
 from pydantic import BaseModel
 
 from core.persistence import (init_db, list_proverbs, add_constraint, add_duplicate_report,
-                              add_correction, claim_nickname,
+                              add_correction, claim_nickname, mark_sensitive,
                               mark_excluded,
                               list_constraints, stats, leaderboard, backfill_glosses,
                               annotator_uid)
@@ -157,7 +157,8 @@ def _ensure_pool():
         if _pool["pairs"] and time.time() - _pool["built"] < POOL_TTL:
             return
         backfill_glosses()          # ensure new rows are glossed
-        rows = [r for r in list_proverbs(excluded=False) if r.get("gloss")]
+        rows = [r for r in list_proverbs(excluded=False)
+                if r.get("gloss") and not r.get("sensitive")]
         by_id = {r["id"]: r for r in rows}
         sample = random.sample(rows, min(2500, len(rows)))
         pos, neg = nearest_pairs([r["text"] for r in sample],
@@ -209,7 +210,7 @@ def public_map(request: Request):
         import pandas as pd
         from fastapi.concurrency import run_in_threadpool  # noqa: F401 (sync route)
         from core.mapview import build_map_html
-        rows = list_proverbs(with_claims_only=True)
+        rows = [r for r in list_proverbs(with_claims_only=True) if not r.get("sensitive")]
         df = pd.DataFrame(rows)
         s = stats()
         _map_cache["html"] = build_map_html(df, meta={
@@ -327,6 +328,22 @@ def judge(j: Judgment, request: Request):
         _pool["by_id"].pop(j.b_id, None)
     else:
         raise HTTPException(400, "bad label")
+    return {"ok": True}
+
+
+class Flag(BaseModel):
+    pid: int
+    user: str = ""
+    code: str = ""
+
+
+@app.post("/api/flag")
+def flag_adult(f: Flag, request: Request):
+    """Annotator reports adult content: hidden from the game and the public map."""
+    _rate_check(_client_key(request))
+    _check_code(f.code, request)
+    _check_human(request)
+    mark_sensitive(f.pid)
     return {"ok": True}
 
 

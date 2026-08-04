@@ -126,6 +126,9 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
     <button onclick="judge('exclude_a')">A isn't a saying</button>
     <button onclick="judge('exclude_b')">B isn't a saying</button>
   </div>
+  <div class="actions2" style="grid-template-columns:1fr">
+    <button onclick="flagAdult()">🔞 Adult language — hide this pair</button>
+  </div>
   <div class="actions2" style="grid-template-columns:1fr 1fr">
     <button onclick="suggestFix('a')">✏️ Fix A's spelling</button>
     <button onclick="suggestFix('b')">✏️ Fix B's spelling</button>
@@ -276,6 +279,15 @@ async function submitHuman(){
   }
 }
 
+async function flagAdult(){
+  if(!pair)return;
+  await api("/api/flag",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({pid:pair.a.id,user,code})});
+  await api("/api/flag",{method:"POST",headers:{"Content-Type":"application/json"},
+    body:JSON.stringify({pid:pair.b.id,user,code})});
+  toast("Hidden from the game and the map. Thank you.");
+  animateOut(0); setTimeout(nextPair,140);
+}
 async function suggestFix(which){
   if(!pair)return;
   const it = which==='a'?pair.a:pair.b;
