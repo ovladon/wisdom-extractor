@@ -1,0 +1,16 @@
+{
+  "version": "v1.0",
+  "generated": "2026-07-19",
+  "doi": "10.5281/zenodo.21439286",
+  "proverbs": 18418,
+  "peoples": 76,
+  "judgments": 237,
+  "consensus_pairs": 229,
+  "double_rated": 35,
+  "annotators": 4,
+  "alpha": 0.752,
+  "alpha_ci": [
+    null,
+    null
+  ]
+}

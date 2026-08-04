@@ -139,6 +139,15 @@ def main():
                                  "method": method, "tau": args.tau}
 
     summary["seconds"] = round(time.time() - t0, 1)
+    try:
+        from scripts.corpus_release_check import current_state, last_release, evaluate
+        _cur = current_state()
+        _checks, _ready = evaluate(_cur, last_release())
+        summary["corpus_release_due"] = _ready
+        summary["corpus_release_triggers"] = [c["trigger"] for c in _checks if c["met"]]
+    except Exception as _e:
+        summary["corpus_release_due"] = f"check failed: {_e}"
+
     print(json.dumps(summary, indent=2))
     return summary
 

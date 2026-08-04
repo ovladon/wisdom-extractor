@@ -776,6 +776,32 @@ with tabs[9]:
              "share": f"{r['share']*100:.0f}%", "reliability": r["reliability"]}
             for r in _an["rows"]]), use_container_width=True, hide_index=True)
 
+    # ---------- corpus release readiness ----------
+    st.markdown("---")
+    st.markdown("### Corpus archiving (pre-registered criteria)")
+    st.caption("Versions are triggered by data volume, never by what the statistics show — "
+               "publishing only on favourable numbers would bias the version history. "
+               "See CORPUS_RELEASE_CRITERIA.md. Publication itself stays manual.")
+    try:
+        from scripts.corpus_release_check import current_state as _cs, last_release as _lr, evaluate as _ev
+        _cur_s = _cs(); _last_s = _lr()
+        _checks, _due = _ev(_cur_s, _last_s)
+        if _last_s:
+            st.caption(f"Last published: **{_last_s.get('version','?')}** "
+                       f"({_last_s.get('generated','?')}) — {_last_s.get('proverbs',0):,} proverbs, "
+                       f"{_last_s.get('judgments',0):,} judgments")
+        st.dataframe(pd.DataFrame([
+            {"trigger": c["trigger"], "met": "✅" if c["met"] else "—", "change": c["detail"]}
+            for c in _checks]), use_container_width=True, hide_index=True)
+        if _due:
+            st.success("A new corpus version is due. Prepare the export with "
+                       "`python scripts/corpus_release_check.py --prepare`, check the files, "
+                       "then publish and run `--record-release`.")
+        else:
+            st.info("No new version due yet.")
+    except Exception as _e:
+        st.caption(f"Release check unavailable: {_e}")
+
     # ---------- moderation ----------
     st.markdown("---")
     st.markdown("### Moderation")

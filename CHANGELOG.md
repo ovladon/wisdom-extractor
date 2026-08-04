@@ -4,6 +4,19 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.28 — 2026-08-04
+- **Pre-registered corpus release criteria** (CORPUS_RELEASE_CRITERIA.md) plus
+  scripts/corpus_release_check.py, surfaced in the Admin tab and reported in every
+  weekly maintenance run.
+- Triggers are **size-based only** (+25% proverbs, +100% judgments, +150 double-rated
+  pairs, >1% records changed by cleaning, 12 months elapsed). Statistics are recorded
+  in each manifest but never trigger a release: publishing only when alpha looks good
+  would make the version history a filtered view of the project.
+- The pipeline detects and prepares; **publication stays manual**, because Zenodo
+  deposits are permanent and public and a data bug should not be able to publish itself.
+- Citation policy documented: papers cite the exact frozen version they analysed, not
+  the concept DOI.
+
 ## v19.27 — 2026-08-04
 - **An annotator is never shown a pair they have already judged.** /api/pair now
   takes the annotator and filters every serving path (stratified, disputed and the
