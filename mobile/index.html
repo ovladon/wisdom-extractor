@@ -301,7 +301,7 @@ async function suggestFix(which){
 async function nextPair(){
   // alternate strategies to keep it fresh: mostly uncertain, sometimes disputed
   strategy=(session%7===6)?"disputed":"uncertain";
-  const d=await api(`/api/pair?strategy=${strategy}`);
+  const d=await api(`/api/pair?strategy=${strategy}&user=${encodeURIComponent(user)}`);
   if(!d){
     $("textA").textContent="Couldn't load a pair — tap here to retry 🔁";
     $("origA").style.display="none";$("whoA").textContent="";

@@ -122,6 +122,23 @@ async def security_headers(request, call_next):
         resp.headers["X-Frame-Options"] = "DENY"
     return resp
 
+_judged = {"by_pair": {}, "built": 0.0}   # (a,b) -> set of uids
+JUDGED_TTL = 60
+CORROBORATE_EVERY = 5     # 1 request in 5 seeks a second opinion on an existing pair
+
+
+def _judged_map():
+    """pair -> set of annotators who judged it. Cheap at this scale, cached briefly."""
+    if _judged["by_pair"] and time.time() - _judged["built"] < JUDGED_TTL:
+        return _judged["by_pair"]
+    m = {}
+    for c in list_constraints():
+        key = (min(int(c["a_id"]), int(c["b_id"])), max(int(c["a_id"]), int(c["b_id"])))
+        m.setdefault(key, set()).add(c.get("user"))
+    _judged.update(by_pair=m, built=time.time())
+    return m
+
+
 _pool = {"pairs": [], "by_id": {}, "built": 0.0, "strata": {}, "cycle": 0}
 _lock = threading.Lock()
 POOL_TTL = 1800  # rebuild candidate pool every 30 min
@@ -277,14 +294,40 @@ def human_verify(h: HumanAnswer, request: Request):
 
 
 @app.get("/api/pair")
-def get_pair(request: Request, strategy: str = "uncertain", code: str = ""):
+def get_pair(request: Request, strategy: str = "uncertain", code: str = "", user: str = ""):
     _check_code(code, request)
     _rate_check(_client_key(request))
     _ensure_pool()
+
+    nick = (user or "").strip()[:40]
+    me = annotator_uid(nick) if len(nick) >= 2 else None
+    jm = _judged_map()
+    mine = {k for k, users in jm.items() if me in users} if me else set()
+
+    def _key(a, b):
+        return (min(a, b), max(a, b))
+
+    def _fresh_for_me(a, b):
+        return _key(a, b) not in mine
+
+    # 1 in CORROBORATE_EVERY: a pair somebody ELSE judged once, that I have not seen.
+    # It is new to this annotator, so it never feels like repetition, but it turns a
+    # single judgment into an independent double-rating (what alpha is computed from).
+    if me and _pool["by_id"] and random.randrange(CORROBORATE_EVERY) == 0:
+        want = [k for k, users in jm.items()
+                if len(users) == 1 and me not in users
+                and k[0] in _pool["by_id"] and k[1] in _pool["by_id"]]
+        if want:
+            pa, pb = random.choice(want)
+            a, b = _item(pa), _item(pb)
+            if a and b:
+                return {"a": a, "b": b, "strategy": "corroborate"}
+
     if strategy == "disputed":
         agg, _ = aggregate_constraints(list_constraints())
         review = [p for p in pairs_needing_review(agg)
-                  if p["a_id"] in _pool["by_id"] and p["b_id"] in _pool["by_id"]]
+                  if p["a_id"] in _pool["by_id"] and p["b_id"] in _pool["by_id"]
+                  and _fresh_for_me(p["a_id"], p["b_id"])]
         if review:
             p = random.choice(review[:15])
             a, b = _item(p["a_id"]), _item(p["b_id"])
@@ -295,12 +338,17 @@ def get_pair(request: Request, strategy: str = "uncertain", code: str = ""):
         for _try in range(len(keys)):
             key = keys[_pool["cycle"] % len(keys)]
             _pool["cycle"] += 1
-            bucket = _pool["strata"].get(key) or []
+            bucket = [x for x in (_pool["strata"].get(key) or [])
+                      if _fresh_for_me(x[0], x[1])]
             if bucket:
                 pa, pb, _sim = random.choice(bucket)
                 a, b = _item(pa), _item(pb)
                 if a and b:
                     return {"a": a, "b": b, "strategy": f"stratified:{key}"}
+    for _ in range(12):                      # random fallback, still avoiding repeats
+        ids = random.sample(list(_pool["by_id"]), 2)
+        if _fresh_for_me(ids[0], ids[1]):
+            return {"a": _item(ids[0]), "b": _item(ids[1]), "strategy": "random"}
     ids = random.sample(list(_pool["by_id"]), 2)
     return {"a": _item(ids[0]), "b": _item(ids[1]), "strategy": "random"}
 
@@ -324,6 +372,7 @@ def judge(j: Judgment, request: Request):
         raise HTTPException(400, "please set a name (2+ characters)")
     _check_nickname(nick, request)
     user = annotator_uid(nick)   # science sees only the pseudonym
+    _judged["built"] = 0.0        # a new judgment must count straight away
     if j.score is not None:
         if j.score not in (5, 4, 3, 2, 1, 0, -1):
             raise HTTPException(400, "bad score")

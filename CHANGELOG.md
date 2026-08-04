@@ -4,6 +4,20 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.27 — 2026-08-04
+- **An annotator is never shown a pair they have already judged.** /api/pair now
+  takes the annotator and filters every serving path (stratified, disputed and the
+  random fallback) against their own history. This was a real defect: the server
+  had no idea who was asking, so repeats happened by chance — the thing annotators
+  complain about most.
+- **1 request in 5 seeks a second opinion**: a pair judged once by *somebody else*
+  and never seen by the current annotator. It reads as an ordinary new pair, but it
+  converts a single judgment into an independent double-rating, which is the only
+  input Krippendorff's alpha has. Measured at 18.6% over 500 simulated requests,
+  with zero repeats.
+- The other four in five stay on fresh stratified pairs, so corpus cleaning (the
+  visible "the app is clearing up" effect) continues at almost full speed.
+
 ## v19.26 — 2026-08-04
 - **Admin tab rebuilt as a research-status dashboard** (new core/science.py).
   Every headline statistic now carries uncertainty and a plain-language reading:
