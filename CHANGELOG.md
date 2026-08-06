@@ -4,6 +4,15 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.29 — 2026-08-04
+- **Access code retired.** It was printed on the public landing page and travelled in
+  every share link, so it no longer functioned as a secret — it only turned away
+  people who reached annotate.wisdomextractor.com directly. Bot protection was never
+  really the code's job: it rests on the finish-the-proverb check, per-IP rate limits,
+  device-bound nicknames, and the per-user daily caps, all unchanged.
+- The setup screen hides the code field entirely when the server does not require one,
+  so newcomers see a single question: pick a nickname.
+
 ## v19.28 — 2026-08-04
 - **Pre-registered corpus release criteria** (CORPUS_RELEASE_CRITERIA.md) plus
   scripts/corpus_release_check.py, surfaced in the Admin tab and reported in every

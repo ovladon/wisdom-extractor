@@ -80,7 +80,7 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
   <p>Help map humanity's proverbs: judge whether two sayings express the same idea.
      Thirty seconds or thirty minutes — every judgment counts.</p>
   <input id="inName" placeholder="Nickname (required — shown on the leaderboard)" maxlength="40" autocomplete="nickname">
-  <input id="inCode" placeholder="Access code (required)" autocomplete="off">
+  <input id="inCode" placeholder="Access code" autocomplete="off">
   <p id="setupMsg" style="color:var(--diff);font-size:13px;min-height:18px;margin:0 0 8px"></p>
   <button onclick="start()">Start judging</button>
   <p style="color:var(--ink3);font-size:12px;margin-top:10px">By playing, your judgments
@@ -432,9 +432,9 @@ async function boot(){
   nextPair();
 }
 (async()=>{
-  try{const c=await (await fetch("/api/config")).json();codeRequired=c.code_required;
-      if(!codeRequired)$("inCode").placeholder="Access code (not needed here)";}catch(e){}
-  if(code){ $("inCode").value=code;
+  try{const c=await (await fetch("/api/config")).json();codeRequired=c.code_required;}catch(e){}
+  if(!codeRequired){ $("inCode").style.display="none"; $("inCode").value=""; }
+  else if(code){ $("inCode").value=code;
     var n=$("setupMsg"); n.style.color="var(--same)";
     n.textContent="Access code filled in from your link ✓ just pick a nickname."; }
   if(user){$("inName").value=user;$("inCode").value=code;boot();}
