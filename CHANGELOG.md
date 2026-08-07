@@ -4,6 +4,18 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.30 — 2026-08-04
+- **World outline regenerated from a documented public-domain source.** The previous
+  data/world_map_paths.svg carried no provenance information and its origin could not
+  be verified from the file, which is not an acceptable basis for published figures.
+  It is now generated from Natural Earth 1:110m (public domain) by the new
+  scripts/build_world_svg.py, with the source GeoJSON kept in the repository so the
+  outline can be reproduced and checked independently. The projection is unchanged,
+  so previously published figures remain accurate.
+- Added PROVENANCE_AND_LICENSING.md: how the map is built, confirmation that the
+  software is original work, the licences of every dependency (all permissive), and
+  the CC BY-SA share-alike obligation the corpus inherits from Wikimedia sources.
+
 ## v19.29 — 2026-08-04
 - **Access code retired.** It was printed on the public landing page and travelled in
   every share link, so it no longer functioned as a secret — it only turned away
