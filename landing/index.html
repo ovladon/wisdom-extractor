@@ -55,6 +55,16 @@ h2{font-size:22px;margin:44px 0 6px}
   text-transform:uppercase;letter-spacing:.05em}
 @media (max-width:560px){.pair{grid-template-columns:1fr}.pair .eq{text-align:left}}
 .step a{color:var(--accent);text-decoration:none}
+.what{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--gold);
+  border-radius:10px;padding:16px 20px;margin:26px 0 34px}
+.what b{display:block;margin-bottom:5px;font-size:15.5px}
+.what p{margin:0;color:var(--ink2);font-size:15px}
+.collab{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:22px 24px;margin:30px 0 8px}
+.collab h2{margin:0 0 8px;font-size:20px}
+.collab p{color:var(--ink2);font-size:15px;margin:0 0 12px;max-width:68ch}
+.collab p:last-child{margin-bottom:0}
+.collab a{color:var(--accent);text-decoration:none}
 .share{background:var(--card);border:1px solid var(--line);border-radius:14px;
   padding:18px 20px;margin:34px 0 8px}
 .share h3{margin:0 0 4px;font-size:17px}
@@ -88,6 +98,15 @@ footer a{color:var(--accent);text-decoration:none}
   <p class="ctanote">The map: pick any motif and watch its trail across cultures — drag the time
   slider to replay its documented record through the centuries. The game: thirty seconds on your
   phone, and the map literally redraws because of you.</p>
+
+  <div class="what">
+    <b>What this is</b>
+    <p>An open research pipeline for comparing short traditional texts across languages.
+    It gathers sayings with their provenance, reduces each to a comparable claim, groups
+    equivalents across cultures, and validates every grouping through human judgment with
+    published inter-annotator agreement statistics. The corpus, the source code, and the
+    judgments are openly licensed and citable.</p>
+  </div>
 
   <p class="q">"Where there is smoke, there is fire."</p>
   <p class="qwho">Found in 17 cultures, from Spain to Vietnam, across at least five language families.</p>
@@ -151,6 +170,23 @@ footer a{color:var(--accent);text-decoration:none}
     this map from scratch.</p></div>
   </div>
 
+  <div class="collab">
+    <h2>Collaboration with institutions</h2>
+    <p>We welcome collaboration with universities, archives, and research groups that hold
+    their own collections of proverbs, idioms, or other short traditional texts.</p>
+    <p>A partner dataset can be processed in a separate instance of the pipeline, held in
+    its own database and isolated from the public corpus: collection and cleaning,
+    canonicalisation, cross-cultural clustering, and human validation with reported
+    agreement statistics. Partner material is not merged into the open corpus unless the
+    partner asks for it, and the terms of each collaboration are agreed individually.</p>
+    <p>We are equally glad to hear from groups wishing to contribute data, annotation
+    effort, or expertise in cross-cultural coding, and from colleagues who would simply
+    like to use the method on their own material.</p>
+    <p>Enquiries are considered as capacity allows. Please write to
+    <a href="mailto:epelican@univ-ovidius.ro">epelican@univ-ovidius.ro</a> or
+    <a href="mailto:vladbelciug80@gmail.com">vladbelciug80@gmail.com</a>.</p>
+  </div>
+
   <div class="share">
     <h3>Know someone who would love this?</h3>
     <p>Every person who judges a few pairs makes the map sharper. Sharing costs you one tap.</p>
@@ -173,7 +209,8 @@ footer a{color:var(--accent);text-decoration:none}
     <a href="https://github.com/ovladon/wisdom-extractor">Source code</a> ·
     <a href="https://doi.org/10.5281/zenodo.21413838">Software DOI</a> ·
     <a href="https://doi.org/10.5281/zenodo.21439285">Corpus DOI</a> ·
-    <a href="https://annotate.wisdomextractor.com/privacy">Privacy</a>
+    <a href="https://annotate.wisdomextractor.com/privacy">Privacy</a> ·
+    Collaboration enquiries: <a href="mailto:epelican@univ-ovidius.ro">epelican@univ-ovidius.ro</a>
   </footer>
 </div>
 <script>
