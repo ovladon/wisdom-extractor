@@ -16,3 +16,4 @@ backups/
 *.bak[0-9].*
 *.bak.*
 deploy/host.conf
+data/adjudications.db

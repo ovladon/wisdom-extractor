@@ -536,6 +536,64 @@ def purge_annotator(uid):
     return n
 
 
+ADJUDICATION_DB = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))),
+                               "data", "adjudications.db")
+
+
+def _adj_con():
+    """Expert rulings live in their own file, not in the corpus database: the live
+    snapshot is replaced on every sync, which would otherwise discard them."""
+    con = sqlite3.connect(ADJUDICATION_DB)
+    con.execute("""CREATE TABLE IF NOT EXISTS adjudications(
+        a_id INTEGER, b_id INTEGER, verdict TEXT, note TEXT, user TEXT,
+        created_at REAL, UNIQUE(a_id, b_id, user))""")
+    return con
+
+
+def adjudicate_pair(a_id, b_id, verdict, note="", user="expert"):
+    """Record an expert ruling on a contested pair.
+
+    verdict: 'same' | 'different' | 'ambiguous'. 'ambiguous' is a substantive
+    finding, not an abstention: it records that two informed readers can legitimately
+    differ, which is the quantity of interest when equivalence is not determinate.
+    Adjudications sit beside the crowd judgments and never overwrite them.
+    """
+    a, b = (a_id, b_id) if a_id < b_id else (b_id, a_id)
+    con = _adj_con()
+    con.execute("INSERT OR REPLACE INTO adjudications(a_id,b_id,verdict,note,user,created_at) "
+                "VALUES(?,?,?,?,?,?)", (a, b, verdict, note, user, time.time()))
+    con.commit(); con.close()
+
+
+def adjudication_consensus():
+    """Per pair: the rulings gathered, and whether the adjudicators concur.
+
+    A pair on which several qualified adjudicators independently return different
+    verdicts is evidence that the indeterminacy lies in the material rather than in
+    any one reader.
+    """
+    from collections import defaultdict
+    per = defaultdict(list)
+    for r in list_adjudications():
+        per[(r["a_id"], r["b_id"])].append(r["verdict"])
+    out = []
+    for (a, b), vs in per.items():
+        agree = len(set(vs)) == 1
+        out.append({"a_id": a, "b_id": b, "n_rulings": len(vs),
+                    "verdicts": "|".join(sorted(vs)),
+                    "unanimous": agree,
+                    "verdict": vs[0] if agree else "contested-among-adjudicators"})
+    return out
+
+
+def list_adjudications():
+    con = _adj_con(); con.row_factory = sqlite3.Row
+    rows = [dict(r) for r in con.execute(
+        "SELECT a_id,b_id,verdict,note,user,created_at FROM adjudications "
+        "ORDER BY created_at DESC")]
+    con.close(); return rows
+
+
 def sensitive_reports_by_user():
     """Who has hidden how much, most recent first. For the admin review screen."""
     con = connect(); con.row_factory = sqlite3.Row

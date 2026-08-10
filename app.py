@@ -101,7 +101,7 @@ else:
     _pers.DB_PATH = os.path.join(WORKSPACE_DIR, _src)
     st.sidebar.caption("Workspace database — fully separate from the open corpus.")
 
-_new_ws = st.sidebar.text_input("New workspace name", placeholder="e.g. waterloo_pilot")
+_new_ws = st.sidebar.text_input("New workspace name", placeholder="e.g. new_collection")
 if st.sidebar.button("➕ Create workspace") and _new_ws.strip():
     _fname = _new_ws.strip().replace(" ", "_") + ".db"
     _wsp = os.path.join(WORKSPACE_DIR, _fname)
@@ -171,12 +171,19 @@ autosave_after = st.sidebar.number_input("Auto-save after N actions (batch)", 1,
 st.sidebar.markdown("---")
 st.sidebar.json(stats())
 
-tabs = st.tabs(["1) Sources & Scrape", "2) Import & Seed", "3) Clean & Canonicalize",
-                "4) Cluster", "5) Results & Map", "6) Annotate • Play",
-                "7) Diagnostics", "8) Interpretation", "9) Export", "🛡 Admin"])
+# Sidebar navigation rather than st.tabs: tab selection is not preserved across
+# reruns, so any button press would return the user to the first tab. The radio
+# keeps its value in session state, and only the selected section executes.
+_SECTIONS = ["1) Sources & Scrape", "2) Import & Seed", "3) Clean & Canonicalize",
+             "4) Cluster", "5) Results & Map", "6) Annotate • Play",
+             "7) Diagnostics", "8) Interpretation", "9) Export", "🛡 Admin"]
+st.sidebar.markdown("---")
+_page = st.sidebar.radio("Section", _SECTIONS, key="nav_section")
+_sel = _SECTIONS.index(_page)
+st.markdown(f"### {_page}")
 
 # --------------------------------------------------------------- 1) Sources & Scrape
-with tabs[0]:
+if _sel == 0:
     st.header("Sources & Scrape")
     srcs = list_sources()
     st.caption(f"Sources in DB: {len(srcs)}")
@@ -221,7 +228,7 @@ with tabs[0]:
         bump()
 
 # --------------------------------------------------------------- 2) Import & Seed
-with tabs[1]:
+if _sel == 1:
     st.header("Import & Seed")
     st.subheader("One-click seed: paper dataset (21,378 proverbs, 77 peoples)")
     if os.path.exists(SEED_CSV) and st.button("🌱 Seed from paper dataset (data/seed_proverbs.csv)"):
@@ -294,7 +301,7 @@ with tabs[1]:
         bump()
 
 # --------------------------------------------------------------- 3) Clean & Canonicalize
-with tabs[2]:
+if _sel == 2:
     st.header("Clean & Canonicalize")
     df = cached_proverbs(st.session_state["db_version"])
     st.caption(f"Active proverbs: {len(df)}")
@@ -314,7 +321,7 @@ with tabs[2]:
         st.dataframe(show, height=350)
 
 # --------------------------------------------------------------- 4) Cluster
-with tabs[3]:
+if _sel == 3:
     st.header("Cluster (char 3–5-gram TF-IDF)")
     df = cached_proverbs(st.session_state["db_version"])
     if df.empty:
@@ -358,7 +365,7 @@ with tabs[3]:
                          height=400)
 
 # --------------------------------------------------------------- 5) Results & Map
-with tabs[4]:
+if _sel == 4:
     st.header("Results & Semantic Map")
     summary = st.session_state.get("cluster_summary")
     df = cached_proverbs(st.session_state["db_version"])
@@ -410,7 +417,7 @@ with tabs[4]:
             st.dataframe(st.session_state["map_df"][["claim", "coverage"]].head(30), height=200)
 
 # --------------------------------------------------------------- 6) Annotate • Play
-with tabs[5]:
+if _sel == 5:
     st.header("Annotate — Play Mode")
     df = cached_proverbs(st.session_state["db_version"])
     if st.session_state["excluded_pending"]:
@@ -529,7 +536,7 @@ with tabs[5]:
                 "and are scored as an evaluation set in Diagnostics (tab 7).")
 
 # --------------------------------------------------------------- 7) Diagnostics
-with tabs[6]:
+if _sel == 6:
     st.header("Diagnostics & Validation")
     df = cached_proverbs(st.session_state["db_version"])
     clustered = df.dropna(subset=["cluster_id"])
@@ -606,7 +613,7 @@ with tabs[6]:
             st.caption("Needs family/region metadata — run the backfill in tab 2.")
 
 # --------------------------------------------------------------- 8) Interpretation
-with tabs[7]:
+if _sel == 7:
     st.header("Interpretation (deterministic, offline)")
     summary = st.session_state.get("cluster_summary")
     df = cached_proverbs(st.session_state["db_version"])
@@ -636,7 +643,7 @@ with tabs[7]:
                 st.caption("Not enough peoples matched to metadata for correlations.")
 
 # --------------------------------------------------------------- 9) Export
-with tabs[8]:
+if _sel == 8:
     st.header("Export")
     df = cached_proverbs(st.session_state["db_version"])
     st.subheader("Leaderboard")
@@ -674,7 +681,7 @@ with tabs[8]:
 
 
 # ---------------------------------------------------------------- 10) Admin / Status
-with tabs[9]:
+if _sel == 9:
     from core.persistence import (nickname_of, sensitive_reports_by_user, unflag_by_user,
                                   block_annotator, unblock_annotator, list_annotators_admin,
                                   purge_annotator)
@@ -822,6 +829,45 @@ with tabs[9]:
             st.download_button("contested_pairs.csv",
                                pd.DataFrame(_cont).to_csv(index=False),
                                "contested_pairs.csv", "text/csv")
+            st.session_state["_contested"] = _cont
+
+    _cont_cached = st.session_state.get("_contested")
+    if _cont_cached:
+        from core.persistence import adjudicate_pair, list_adjudications
+        _done = {(r["a_id"], r["b_id"]) for r in list_adjudications()}
+        st.markdown("**Adjudicate a pair.** An expert ruling turns a contested pair into "
+                    "a gold-standard item. *Genuinely ambiguous* is a substantive verdict, "
+                    "not an abstention: it records that two informed readers may "
+                    "legitimately differ. Rulings sit beside the crowd judgments and never "
+                    "overwrite them.")
+        _open = [r for r in _cont_cached
+                 if (min(r["a_id"], r["b_id"]), max(r["a_id"], r["b_id"])) not in _done]
+        st.caption(f"{len(_done)} adjudicated · {len(_open)} awaiting a ruling")
+        if _open:
+            _pick = st.selectbox(
+                "Pair", range(len(_open)),
+                format_func=lambda i: f"spread {_open[i]['spread']} · "
+                                      f"{_open[i]['gloss_a'][:45]} / {_open[i]['gloss_b'][:45]}")
+            _r = _open[_pick]
+            st.info(f"**A ({_r['people_a']}):** {_r['gloss_a']}\n\n"
+                    f"**B ({_r['people_b']}):** {_r['gloss_b']}\n\n"
+                    f"Judges scored: {_r['scores']}")
+            _note = st.text_input("Note (why)", key="_adj_note")
+            a1, a2, a3 = st.columns(3)
+            for _col, _v, _label in ((a1, "same", "✅ Same idea"),
+                                     (a2, "different", "❌ Different"),
+                                     (a3, "ambiguous", "⚖️ Genuinely ambiguous")):
+                if _col.button(_label, key=f"adj_{_v}"):
+                    adjudicate_pair(_r["a_id"], _r["b_id"], _v, _note, user)
+                    st.success(f"Recorded: {_v}")
+                    st.rerun()
+        _adj = list_adjudications()
+        if _adj:
+            import collections as _c
+            _counts = _c.Counter(a["verdict"] for a in _adj)
+            st.caption("Rulings so far: " + ", ".join(f"{k}: {v}" for k, v in _counts.items()))
+            st.download_button("adjudications.csv", pd.DataFrame(_adj).to_csv(index=False),
+                               "adjudications.csv", "text/csv")
 
     # ---------- corpus release readiness ----------
     st.markdown("---")
