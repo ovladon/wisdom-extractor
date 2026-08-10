@@ -788,6 +788,41 @@ with tabs[9]:
              "share": f"{r['share']*100:.0f}%", "reliability": r["reliability"]}
             for r in _an["rows"]]), use_container_width=True, hide_index=True)
 
+    # ---------- contested pairs ----------
+    st.markdown("---")
+    st.markdown("### Contested pairs")
+    st.caption("Pairs on which independent judges divided, ranked by spread. "
+               "Reviewing them shows where cross-cultural equivalence is genuinely "
+               "indeterminate, and where presentation of the text influenced the "
+               "judgment.")
+    if st.button("Show contested pairs"):
+        with st.spinner("Comparing independent judgments…"):
+            sys.path.insert(0, os.path.dirname(os.path.abspath(__file__)))
+            from scripts.disagreement_analysis import analyse, characterise
+            _recs = analyse(); _ch = characterise(_recs)
+        c1, c2, c3 = st.columns(3)
+        c1.metric("Double-rated", _ch["n_double_rated"])
+        c2.metric("Agreed (spread ≤1)", _ch["n_agreed"])
+        c3.metric("Contested (spread ≥2)", _ch["n_contested"])
+        if _ch.get("similarity_diff_p") is not None:
+            st.caption(
+                f"Lexical similarity of contested pairs ({_ch.get('similarity_contested')}) "
+                f"versus agreed ({_ch.get('similarity_agreed')}), p = "
+                f"{_ch['similarity_diff_p']:.2f}; same-language-family rate "
+                f"{_ch.get('same_family_contested')} vs {_ch.get('same_family_agreed')}. "
+                f"Where these do not differ, disagreement is not explained by surface "
+                f"features — it is semantic.")
+        _cont = [r for r in _recs if r["spread"] >= 2]
+        if _cont:
+            st.dataframe(pd.DataFrame([
+                {"spread": r["spread"], "scores": r["scores"], "sim": r["similarity"],
+                 "A": r["gloss_a"][:70], "people A": r["people_a"],
+                 "B": r["gloss_b"][:70], "people B": r["people_b"]} for r in _cont]),
+                use_container_width=True, hide_index=True)
+            st.download_button("contested_pairs.csv",
+                               pd.DataFrame(_cont).to_csv(index=False),
+                               "contested_pairs.csv", "text/csv")
+
     # ---------- corpus release readiness ----------
     st.markdown("---")
     st.markdown("### Corpus archiving (pre-registered criteria)")

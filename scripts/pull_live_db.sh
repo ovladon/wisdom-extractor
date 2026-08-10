@@ -3,9 +3,19 @@
 # so the local analysis app (app.py) shows the real, current state.
 # Usage:  ./scripts/pull_live_db.sh   then run the printed streamlit command.
 set -euo pipefail
+# Host is supplied by the environment or deploy/host.conf (both untracked), so the
+# server address is not published with the source.
+HOST="${WISDOM_HOST:-}"
+if [ -z "$HOST" ] && [ -f "$(dirname "$0")/../deploy/host.conf" ]; then
+  . "$(dirname "$0")/../deploy/host.conf"
+  HOST="${WISDOM_HOST:-}"
+fi
+if [ -z "$HOST" ]; then
+  echo "Set WISDOM_HOST (user@host) or create deploy/host.conf" >&2; exit 1
+fi
 HERE="$(cd "$(dirname "$0")/.." && pwd)"
 OUT="${1:-$HERE/data/live_snapshot.db}"
-ssh root@188.68.56.176 bash -s <<'RMT'
+ssh "$HOST" bash -s <<'RMT'
 cd /root/wisdom-extractor/deploy
 docker compose exec -T mobile python - <<'PY'
 import sqlite3
@@ -15,7 +25,7 @@ PY
 MP=$(docker volume inspect $(docker volume ls -q | grep wisdom_data | head -1) --format '{{.Mountpoint}}')
 cp "$MP/snap.db" /root/snap.db
 RMT
-scp -q root@188.68.56.176:/root/snap.db "$OUT"
+scp -q "$HOST":/root/snap.db "$OUT"
 echo
 echo "Live snapshot saved to: $OUT"
 echo "See the real status locally with:"

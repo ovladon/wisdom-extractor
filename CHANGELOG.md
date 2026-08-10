@@ -4,24 +4,30 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.31 — 2026-08-10
+- Glosses are cleaned of inline editorial apparatus from digitised dictionary
+  collections (entry numbers and headwords); the source string is preserved in
+  `text`. Runs each maintenance cycle. 1,524 glosses updated on the current corpus.
+- `scripts/disagreement_analysis.py`: ranks double-rated pairs by the spread of
+  independent judgments and tests whether contested pairs differ from agreed ones in
+  lexical similarity, language family, region or length.
+- Admin: contested-pairs panel with the comparison and a CSV export.
+- Deployment host is read from `WISDOM_HOST` or an untracked `deploy/host.conf`
+  instead of being written into the scripts.
+
 ## v19.30 — 2026-08-04
-- **World outline regenerated from a documented public-domain source.** The previous
-  data/world_map_paths.svg carried no provenance information and its origin could not
-  be verified from the file, which is not an acceptable basis for published figures.
-  It is now generated from Natural Earth 1:110m (public domain) by the new
-  scripts/build_world_svg.py, with the source GeoJSON kept in the repository so the
-  outline can be reproduced and checked independently. The projection is unchanged,
-  so previously published figures remain accurate.
+- `data/world_map_paths.svg` is now generated from Natural Earth 1:110m (public
+  domain) by `scripts/build_world_svg.py`; the source GeoJSON ships with the
+  repository so the outline is reproducible. Projection unchanged.
 - Added PROVENANCE_AND_LICENSING.md: how the map is built, confirmation that the
   software is original work, the licences of every dependency (all permissive), and
   the CC BY-SA share-alike obligation the corpus inherits from Wikimedia sources.
 
 ## v19.29 — 2026-08-04
-- **Access code retired.** It was printed on the public landing page and travelled in
-  every share link, so it no longer functioned as a secret — it only turned away
-  people who reached annotate.wisdomextractor.com directly. Bot protection was never
-  really the code's job: it rests on the finish-the-proverb check, per-IP rate limits,
-  device-bound nicknames, and the per-user daily caps, all unchanged.
+- **Access code retired.** `ANNOTATOR_CODE` is now empty by default; the API accepts
+  requests without a code. Existing links carrying `?code=` continue to work. The
+  human check, rate limits, device-bound nicknames and per-user daily caps are
+  unchanged.
 - The setup screen hides the code field entirely when the server does not require one,
   so newcomers see a single question: pick a nickname.
 
@@ -39,18 +45,13 @@ snapshots were recovered from the project's version folders and `v8-18.zip`.
   the concept DOI.
 
 ## v19.27 — 2026-08-04
-- **An annotator is never shown a pair they have already judged.** /api/pair now
-  takes the annotator and filters every serving path (stratified, disputed and the
-  random fallback) against their own history. This was a real defect: the server
-  had no idea who was asking, so repeats happened by chance — the thing annotators
-  complain about most.
+- **An annotator is never shown a pair they have already judged.** `/api/pair` takes
+  the annotator and filters every serving path (stratified, disputed, random
+  fallback) against their own history.
 - **1 request in 5 seeks a second opinion**: a pair judged once by *somebody else*
-  and never seen by the current annotator. It reads as an ordinary new pair, but it
-  converts a single judgment into an independent double-rating, which is the only
-  input Krippendorff's alpha has. Measured at 18.6% over 500 simulated requests,
-  with zero repeats.
-- The other four in five stay on fresh stratified pairs, so corpus cleaning (the
-  visible "the app is clearing up" effect) continues at almost full speed.
+  and never seen by the current annotator, converting a single judgment into an
+  independent double-rating. Measured at 18.6% over 500 simulated requests, zero
+  repeats. The other four in five remain fresh stratified pairs.
 
 ## v19.26 — 2026-08-04
 - **Admin tab rebuilt as a research-status dashboard** (new core/science.py).
@@ -67,10 +68,8 @@ snapshots were recovered from the project's version folders and `v8-18.zip`.
   and irreversible.
 
 ## v19.25 — 2026-08-04
-- **Hardened the adult-language report against abuse.** It was the least-guarded
-  endpoint: IP rate-limit only, no per-user cap, no record of who reported what.
-  Now it requires a claimed nickname, caps at 20 hides per annotator per day, and
-  writes an attributable row for every report.
+- **Adult-language reporting hardened**: requires a claimed nickname, caps at 20
+  hides per annotator per day, and writes an attributable row for every report.
 - **One-command revert**: Admin tab lists who has hidden how much and reverts an
   account's hides wholesale. Proverbs the word list catches, or that a second
   annotator also reported, stay hidden.
@@ -133,13 +132,12 @@ snapshots were recovered from the project's version folders and `v8-18.zip`.
   live counters with static fallback; numbers refreshed (32,000+/79).
 
 ## v19.19 — 2026-07-22
-- **Corpus self-cleaning** (annotator-reported problem: OCR garbles like "ivants"
-  and abundant near-duplicates). Three new pipeline steps each maintenance cycle:
-  fix_ocr_artifacts() repairs the w->'iv' OCR confusion using the corpus as its own
-  dictionary (rare word + common 'w' variant required); dedup_normalized() auto-
+- **Corpus self-cleaning.** Three new pipeline steps run each maintenance cycle:
+  fix_ocr_artifacts repairs the w->'iv' OCR confusion using the corpus as its own
+  dictionary (rare word + common 'w' variant required); dedup_normalized auto-
   excludes same-people twins identical after case/punctuation normalization (keeper
   inherits earliest attestation; cross-people twins preserved as data);
-  apply_corrections() applies annotator-suggested fixes when typo-sized (>=0.85
+  apply_corrections applies annotator-suggested fixes when typo-sized (>=0.85
   similarity), larger rewrites stay pending. Fixed rows get claim/gloss cleared for
   re-derivation; hash collisions resolve as exclusions.
 - **"Fix A/B's spelling" buttons** in the app + /api/fix endpoint (code+human+rate
@@ -159,7 +157,7 @@ snapshots were recovered from the project's version folders and `v8-18.zip`.
   word-for-word twins (common across overlapping collections). Stored as a maximal
   same-rule judgment (4) for clustering PLUS a row in the new `duplicate_reports`
   table (pair-normalized, unique per user) — a human-verified dedup/attestation-merge
-  list that leaves the -1..4 IAA scale untouched. Guide entry added; stats() now
+  list that leaves the -1..4 IAA scale untouched. Guide entry added; stats now
   reports duplicate_reports.
 
 ## v19.16 — 2026-07-21
@@ -199,7 +197,7 @@ snapshots were recovered from the project's version folders and `v8-18.zip`.
   landing footer; name field now nudges toward nicknames.
 
 ## v19.11 — 2026-07-21
-- **Ordinal consensus engine**: aggregation now works natively on the Pelican scale —
+- **Ordinal consensus engine**: aggregation now works natively on the graded scale —
   reliability-weighted consensus scores, ordinal annotator reliability (closeness, not
   binary match), theme-zone votes finally count, disputes from dispersion. Synthetic
   validation improves further (2-inverters scenario 0.54 → 0.86 accuracy). Live data:
@@ -213,7 +211,7 @@ snapshots were recovered from the project's version folders and `v8-18.zip`.
 - **Landing page** (`landing/`) for the public domain root.
 
 ## v19.10 — 2026-07-21
-- **Stratified pair serving** (Pelican revision): candidate pairs are bucketed by
+- **Stratified pair serving** (revision): candidate pairs are bucketed by
   language-family match x region match x similarity band and served round-robin, so the
   growing annotation set is balanced across strata.
 - **Log-odds consensus** (Dawid-Skene weighting): identified low-reliability annotators'
@@ -254,7 +252,7 @@ snapshots were recovered from the project's version folders and `v8-18.zip`.
 - Noise filter: web-nav/ad debris patterns (scraped-page ads no longer enter the corpus).
 
 ## v19.6 — 2026-07-18
-- **Graded semantic-equivalence scheme (Dr. Elena Pelican).** Binary same/different is
+- **Graded semantic-equivalence scheme .** Binary same/different is
   replaced everywhere by her 6-level scale — 4 same rule, 3 same advice, 2 same theme,
   1 related/different lesson, 0 unrelated, −1 contradictory — with her operational
   annotator tests as the in-app guide. Mobile uses her two-stage flow: swipe left =
@@ -267,7 +265,6 @@ snapshots were recovered from the project's version folders and `v8-18.zip`.
   read — an English gloss is extracted from markers ("Translation:", "Literally:"),
   bilingual texts, or English originals (60.9% of corpus, 11,093 items); unglossed rows
   stay in the corpus but out of annotation pools. Gloss shown big, original beneath.
-- Review-response plan: `docs/pelican_review_plan.md`.
 
 ## v19.5 — 2026-07-18
 - **Mobile swipe app** (`mobile/`): phone-first PWA for annotation in spare moments —
@@ -302,9 +299,9 @@ snapshots were recovered from the project's version folders and `v8-18.zip`.
   `data/people_coords.csv` (67 cultural centroids, extendable).
 
 ## v19.2 — 2026-07-17
-- **Attestation years / historical timeline.** `extract_attestation_year()` harvests
+- **Attestation years / historical timeline.** `extract_attestation_year` harvests
   "attested no later than" years from citation tails before stripping;
-  `backfill_attestation_years()` dates existing rows from citations or dated sources
+  `backfill_attestation_years` dates existing rows from citations or dated sources
   (`data/source_years.json`). On the current corpus: 5,738 rows dated (31%), earliest
   bounds 1611–1758. Scrape/seed capture years automatically; tab 2 gains a 🕰️ backfill
   button; tab 5 shows a per-cluster attestation timeline (year × culture).

@@ -415,6 +415,55 @@ EXPLICIT_RX = re.compile(
     re.I)
 
 
+# Some digitised dictionary collections carry their editorial apparatus inline:
+# an entry number, then a headword, then the saying, e.g.
+#   "5. Adversity. Adversity makes a man wise, not rich."
+#   "28 ] 476. Edged Tools. It is ill meddling with edged tools."
+# The gloss presented for comparison holds the saying alone; the source string is
+# always preserved unchanged in `text`.
+#
+# A leading entry number is required before a headword is removed, so ordinary
+# two-sentence sayings such as "Money talks. Everyone listens." are untouched.
+_ENTRY_RX = re.compile(r"^\s*(?:\d{1,4}\s*\]?\s*[.)]?\s*)+")
+_HEADWORD_RX = re.compile(r"^([A-Z][A-Za-z]*(?:\s+[A-Za-z]+){0,2})\.\s+(?=[A-Z\"'])")
+_ATTRIB_RX = re.compile(r"^(by|from|see|cf|after)\b", re.I)
+
+
+def clean_dictionary_apparatus(text):
+    """Strip entry numbers, an optional headword, and trailing citation debris.
+    Returns (cleaned, changed)."""
+    t = (text or "").strip()
+    before = t
+    m = _ENTRY_RX.match(t)
+    if m and m.end() > 0:
+        rest = t[m.end():].strip()
+        h = _HEADWORD_RX.match(rest)
+        t = rest[h.end():].strip() if h else rest
+    t = re.sub(r"\s*\b(ibid\.|op\.\s?cit\.?|loc\.\s?cit\.?)\s*$", "", t, flags=re.I).strip()
+    return t, (t != before)
+
+
+def clean_glosses_apparatus(min_words=4):
+    """Apply the above to every gloss. A result that no longer looks like a saying
+    is left untouched rather than silently mangled. Returns (fixed, skipped)."""
+    con = connect(); cur = con.cursor()
+    fixed = skipped = 0
+    for pid, gloss in cur.execute(
+            "SELECT id, gloss FROM proverbs WHERE gloss IS NOT NULL AND gloss != ''"
+            ).fetchall():
+        new, changed = clean_dictionary_apparatus(gloss)
+        if not changed:
+            continue
+        if (len(new.split()) < min_words or not re.search(r"[A-Za-z]{3}", new)
+                or _ATTRIB_RX.match(new)):
+            skipped += 1
+            continue
+        con.execute("UPDATE proverbs SET gloss=?, claim=NULL WHERE id=?", (new, pid))
+        fixed += 1
+    con.commit(); con.close()
+    return fixed, skipped
+
+
 def flag_sensitive_auto():
     """Mark proverbs containing unambiguous adult language. They stay in the corpus
     (removing them would censor the scientific record); they are simply not served
