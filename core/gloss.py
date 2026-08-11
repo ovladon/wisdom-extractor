@@ -55,6 +55,59 @@ def _clean(g):
     return g.strip()
 
 
+_FRAGMENT_RX = re.compile(r"^(and|or|but|nor|which|that|who|whose|whom|because|so)\b", re.I)
+_CITATION_RX = re.compile(r"\b(19|20)\d{2}\b|\b(ISBN|vol\.|pp?\.|ed\.)\b")
+_IDENT = None
+
+
+def _identifier():
+    """Statistical language identifier, loaded once. Absent -> caller falls back."""
+    global _IDENT
+    if _IDENT is None:
+        try:
+            from langid.langid import LanguageIdentifier, model
+            _IDENT = LanguageIdentifier.from_modelstring(model, norm_probs=True)
+        except Exception:
+            _IDENT = False
+    return _IDENT or None
+
+
+def _is_english_sentence(seg, min_conf=0.90, min_score=0.10):
+    """Two independent cues must agree: a trained identifier and the word-list score.
+    Also rejects fragments and bibliographic lines, which score as English but are
+    not sayings."""
+    if len(seg.split()) < 3 or not seg[:1].isupper():
+        return False
+    if _FRAGMENT_RX.match(seg) or _CITATION_RX.search(seg):
+        return False
+    ident = _identifier()
+    if ident is None:
+        return english_score(seg) >= 0.22
+    lang, conf = ident.classify(seg)
+    return lang == "en" and conf >= min_conf and english_score(seg) >= min_score
+
+
+def first_english_sentence(text):
+    """The first sentence of `text` that is confidently English, or None.
+
+    Returns one sentence, not a run of them: a gloss that trails on into commentary
+    gives judges extra material that differs between them.
+    """
+    t = str(text or "").strip()
+    if not t:
+        return None
+    m = _MARKER_RX.search(t)
+    if m:
+        g = re.split(r"(?<=[.!?])\s+", _clean(m.group(1)))[0].strip()
+        if _is_english_sentence(g):
+            return g
+    for seg in _SEG_SPLIT_RX.split(t):
+        seg = _clean(seg)
+        if _is_english_sentence(seg):
+            return seg if seg[-1] in ".!?" else seg + "."
+    return None
+
+
 def extract_gloss(text, threshold=0.22, min_words=3):
     """Return the best English gloss of `text`, or None if none can be found.
 

@@ -4,6 +4,18 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.33 — 2026-08-13
+- Gloss extraction uses a statistical language identifier (langid, offline) together
+  with the existing word-list score; both must agree, and fragments and bibliographic
+  lines are rejected.
+- `trim_glosses_to_first_sentence()` shortens glosses that continue past the saying
+  into commentary. 1,046 rows affected.
+- `recover_glosses_unreviewed()` finds an English sentence for rows that had none.
+  Recovered rows are marked `auto_unreviewed` and are not served to annotators until
+  accepted in the new Admin review queue. 873 rows recovered.
+- New `gloss_source` column records provenance: collector, extracted, trimmed,
+  auto_unreviewed, machine.
+
 ## v19.32 — 2026-08-13
 - Claims are built from the English gloss when one exists, falling back to the source
   string (`claim_basis`). Previously the source string was always used, which left

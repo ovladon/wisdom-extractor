@@ -26,6 +26,7 @@ PROVERB_COLUMNS = [
     ("hash", "TEXT UNIQUE"),
     ("excluded", "INTEGER DEFAULT 0"),
     ("sensitive", "INTEGER DEFAULT 0"),   # adult language: kept in the corpus, hidden from public surfaces
+    ("gloss_source", "TEXT"),             # collector | extracted | trimmed | auto_unreviewed | machine
     ("added_at", "REAL"),
 ]
 
@@ -207,7 +208,7 @@ def list_proverbs(excluded=False, with_claims_only=False):
     con = connect(); cur = con.cursor()
     q = """SELECT id,text,people,language,family,region,original,claim,gloss,quality_score,
                   cluster_id,first_seen,last_seen,url,excluded,
-                  COALESCE(sensitive,0) AS sensitive FROM proverbs"""
+                  COALESCE(sensitive,0) AS sensitive, gloss_source FROM proverbs"""
     conds = []
     if not excluded:
         conds.append("excluded=0")
@@ -219,7 +220,7 @@ def list_proverbs(excluded=False, with_claims_only=False):
     rows = cur.fetchall(); con.close()
     keys = ["id", "text", "people", "language", "family", "region", "original", "claim", "gloss",
             "quality_score", "cluster_id", "first_seen", "last_seen", "url", "excluded",
-            "sensitive"]
+            "sensitive", "gloss_source"]
     return [dict(zip(keys, r)) for r in rows]
 
 
@@ -322,6 +323,59 @@ def backfill_attestation_years(source_years_json=None):
     cur.executemany("UPDATE proverbs SET first_seen=? WHERE id=?", from_cit + from_src)
     con.commit(); con.close()
     return len(from_cit), len(from_src)
+
+
+def trim_glosses_to_first_sentence():
+    """Shorten existing glosses that trail past the saying into commentary.
+
+    Only applies when the trimmed text is confidently English and materially
+    shorter, so a genuine multi-clause proverb is left alone. Returns count.
+    """
+    from .gloss import first_english_sentence
+    con = connect(); cur = con.cursor()
+    n = 0
+    for pid, gloss in cur.execute(
+            "SELECT id, gloss FROM proverbs WHERE gloss IS NOT NULL AND gloss != ''"
+            ).fetchall():
+        short = first_english_sentence(gloss)
+        if short and len(short) < len(gloss) * 0.75 and len(short.split()) >= 4:
+            con.execute("UPDATE proverbs SET gloss=?, gloss_source='trimmed', claim=NULL "
+                        "WHERE id=?", (short, pid))
+            n += 1
+    con.commit(); con.close()
+    return n
+
+
+def recover_glosses_unreviewed():
+    """Find an English sentence for rows that have no gloss.
+
+    Automatic identification is imperfect: romanised non-English, OCR damage and
+    glossary definitions can pass as English. Recovered glosses are therefore marked
+    `auto_unreviewed` and are NOT served to annotators until a human accepts them.
+    Returns count.
+    """
+    from .gloss import first_english_sentence
+    con = connect(); cur = con.cursor()
+    n = 0
+    for pid, text in cur.execute(
+            "SELECT id, text FROM proverbs WHERE (gloss IS NULL OR gloss='')").fetchall():
+        g = first_english_sentence(text)
+        if g:
+            con.execute("UPDATE proverbs SET gloss=?, gloss_source='auto_unreviewed' "
+                        "WHERE id=?", (g, pid))
+            n += 1
+    con.commit(); con.close()
+    return n
+
+
+def review_gloss(pid, accept=True):
+    """Accept an auto-recovered gloss into service, or discard it."""
+    con = connect()
+    if accept:
+        con.execute("UPDATE proverbs SET gloss_source='extracted' WHERE id=?", (pid,))
+    else:
+        con.execute("UPDATE proverbs SET gloss=NULL, gloss_source=NULL WHERE id=?", (pid,))
+    con.commit(); con.close()
 
 
 def backfill_glosses():

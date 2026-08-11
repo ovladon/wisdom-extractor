@@ -191,7 +191,8 @@ def _ensure_pool():
             return
         backfill_glosses()          # ensure new rows are glossed
         rows = [r for r in list_proverbs(excluded=False)
-                if r.get("gloss") and not r.get("sensitive")]
+                if r.get("gloss") and not r.get("sensitive")
+                and r.get("gloss_source") != "auto_unreviewed"]
         by_id = {r["id"]: r for r in rows}
         sample = random.sample(rows, min(2500, len(rows)))
         pos, neg = nearest_pairs([r["text"] for r in sample],

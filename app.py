@@ -796,6 +796,31 @@ if _sel == 9:
              "share": f"{r['share']*100:.0f}%", "reliability": r["reliability"]}
             for r in _an["rows"]]), use_container_width=True, hide_index=True)
 
+    # ---------- gloss review queue ----------
+    st.markdown("---")
+    st.markdown("### Gloss review queue")
+    st.caption("English renderings found automatically in the source text. Automatic "
+               "identification is imperfect — romanised non-English, OCR damage and "
+               "glossary definitions can pass as English — so these are withheld from "
+               "annotators until accepted here.")
+    from core.persistence import review_gloss
+    _pending = [r for r in list_proverbs(excluded=False)
+                if r.get("gloss_source") == "auto_unreviewed"]
+    st.metric("Awaiting review", f"{len(_pending):,}")
+    if _pending:
+        _n = st.slider("How many to review now", 5, 50, 10, key="_glossn")
+        for _r in _pending[:_n]:
+            with st.container():
+                st.markdown(f"**{_r.get('people')}** · proposed gloss:")
+                st.info(_r["gloss"])
+                st.caption(f"source: {(_r.get('text') or '')[:220]}")
+                g1, g2, _ = st.columns([1, 1, 3])
+                if g1.button("✅ Accept", key=f"ga{_r['id']}"):
+                    review_gloss(_r["id"], True); st.rerun()
+                if g2.button("✖ Reject", key=f"gr{_r['id']}"):
+                    review_gloss(_r["id"], False); st.rerun()
+                st.markdown("---")
+
     # ---------- contested pairs ----------
     st.markdown("---")
     st.markdown("### Contested pairs")
