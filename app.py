@@ -155,7 +155,7 @@ seed_sources_if_empty()
 
 PROVERB_FIELDS = ["id", "text", "people", "language", "family", "region", "original",
                   "claim", "gloss", "quality_score", "cluster_id", "first_seen", "last_seen",
-                  "url", "excluded", "sensitive"]
+                  "url", "excluded", "sensitive", "gloss_source"]
 
 
 @st.cache_data(show_spinner=False)
