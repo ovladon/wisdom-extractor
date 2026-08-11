@@ -27,7 +27,7 @@ from core.persistence import (init_db, list_sources, insert_proverb, list_prover
                               backfill_attestation_years, backfill_glosses,
                               infer_people_from_url)
 from core.cleaner import keep, quality_score, strip_citations, extract_attestation_year
-from core.canonicalize import canonicalize
+from core.canonicalize import canonicalize, claim_basis
 from core.clustering import cluster_texts
 from core.annotation_quality import aggregate_constraints, constraint_pairs_for_clustering
 from core.persistence import (merge_reported_duplicates, fix_ocr_artifacts,
@@ -116,7 +116,7 @@ def main():
     summary["glossed"] = glossed
 
     rows = list_proverbs(excluded=False)
-    missing = [(r["id"], canonicalize(r["text"]), quality_score(r["text"]))
+    missing = [(r["id"], canonicalize(claim_basis(r)), quality_score(claim_basis(r)))
                for r in rows if not r["claim"]]
     if missing:
         save_claims(missing)

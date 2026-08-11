@@ -44,6 +44,13 @@ STRUCTURAL_RULES = [
 _COMPILED = [(re.compile(p), r) for p, r in STRUCTURAL_RULES]
 
 
+def claim_basis(row):
+    """The string a claim should be built from: the English gloss when present,
+    otherwise the source text."""
+    g = (row.get("gloss") or "").strip()
+    return g if g else (row.get("text") or "")
+
+
 def canonicalize(s):
     t = str(s).strip().strip(QUOTES).strip()
     t = re.sub(r"\s+", " ", t)

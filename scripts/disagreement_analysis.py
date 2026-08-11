@@ -127,6 +127,10 @@ def characterise(recs, contested_from=2):
                 "boundary (2.5-3)" if m <= 3 else "clearly same (>3)")
         zones[zone] += 1
     out["contested_by_zone"] = dict(zones)
+    # With few contested pairs these comparisons have little power: a non-significant
+    # result does not establish that the groups are alike. Flag it rather than let the
+    # p-value be read as evidence of no difference.
+    out["underpowered"] = len(contested) < 30
     return out
 
 

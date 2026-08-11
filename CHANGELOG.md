@@ -4,6 +4,14 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.32 — 2026-08-13
+- Claims are built from the English gloss when one exists, falling back to the source
+  string (`claim_basis`). Previously the source string was always used, which left
+  proverbs collected in non-Latin scripts with claims in their original script; those
+  cannot match an English claim under character n-grams. 17% of claims were affected.
+- Contested-pair comparisons report a power flag when the contested set is small, so a
+  non-significant result is not read as evidence of similarity.
+
 ## v19.31 — 2026-08-10
 - Glosses are cleaned of inline editorial apparatus from digitised dictionary
   collections (entry numbers and headwords); the source string is preserved in

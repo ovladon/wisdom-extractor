@@ -23,7 +23,7 @@ from core.persistence import (
     infer_people_from_url, backfill_attestation_years, annotator_uid,
 )
 from core.cleaner import keep, quality_score, strip_citations, extract_attestation_year
-from core.canonicalize import canonicalize
+from core.canonicalize import canonicalize, claim_basis
 from core.clustering import cluster_texts, nearest_pairs, summarize_clusters
 from core.diagnostics import (
     silhouette_cosine, bootstrap_stability, sensitivity_sweep,
@@ -312,7 +312,8 @@ if _sel == 2:
         st.success(f"Excluded {len(bad)} noise rows (reversible in DB).")
         bump()
     if c2.button("⚗️ Canonicalize all (compute claims + quality)") and not df.empty:
-        updates = [(int(r["id"]), canonicalize(r["text"]), quality_score(r["text"])) for _, r in df.iterrows()]
+        updates = [(int(r["id"]), canonicalize(claim_basis(r)), quality_score(claim_basis(r)))
+                   for _, r in df.iterrows()]
         save_claims(updates)
         st.success(f"Canonicalized {len(updates)} proverbs.")
         bump()
@@ -817,8 +818,11 @@ if _sel == 9:
                 f"versus agreed ({_ch.get('similarity_agreed')}), p = "
                 f"{_ch['similarity_diff_p']:.2f}; same-language-family rate "
                 f"{_ch.get('same_family_contested')} vs {_ch.get('same_family_agreed')}. "
-                f"Where these do not differ, disagreement is not explained by surface "
-                f"features — it is semantic.")
+                f"With {_ch['n_contested']} contested pairs these comparisons carry "
+                f"little power: a non-significant result does not establish that the "
+                f"groups are alike. Treat as provisional until the contested set grows."
+                if _ch.get("underpowered") else
+                f"Contested and agreed pairs do not differ on these surface features.")
         _cont = [r for r in _recs if r["spread"] >= 2]
         if _cont:
             st.dataframe(pd.DataFrame([
