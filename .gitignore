@@ -18,6 +18,9 @@ backups/
 deploy/host.conf
 data/adjudications.db
 
+# prepared corpus deposit — belongs on Zenodo, not in git
+data/corpus_export_pending/
+
 # analysis outputs written into the working directory by scripts/iaa_report.py
 iaa_report.json
 iaa_disagreements.csv
