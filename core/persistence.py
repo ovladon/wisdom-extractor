@@ -28,6 +28,12 @@ PROVERB_COLUMNS = [
     ("sensitive", "INTEGER DEFAULT 0"),   # adult language: kept in the corpus, hidden from public surfaces
     ("gloss_source", "TEXT"),             # collector | extracted | trimmed | auto_unreviewed | machine
     ("added_at", "REAL"),
+    # Who removed a row from the active corpus, when, and why. Exclusion is the one
+    # editorial act that changes what the published corpus contains, so it is the one
+    # that most needs to be attributable and reversible.
+    ("excluded_by", "TEXT"),
+    ("excluded_at", "REAL"),
+    ("exclude_reason", "TEXT"),
 ]
 
 
@@ -313,17 +319,46 @@ def list_proverbs(excluded=False, with_claims_only=False):
     return [dict(zip(keys, r)) for r in rows]
 
 
-def mark_excluded(pid, excluded=True):
+def mark_excluded(pid, excluded=True, user=None, reason=None):
+    """Withdraw a row from the active corpus, or restore it.
+
+    The row is never deleted — an excluded proverb stays in the database and in the
+    provenance record, it simply stops being served, counted, clustered or mapped.
+    That is what makes the act reversible, and it is why the corpus can be cleaned
+    without the cleaning becoming an undocumented edit to the published data.
+    """
     con = connect(); cur = con.cursor()
-    cur.execute("UPDATE proverbs SET excluded=? WHERE id=?", (1 if excluded else 0, pid))
+    if excluded:
+        cur.execute("UPDATE proverbs SET excluded=1, excluded_by=?, excluded_at=?, "
+                    "exclude_reason=? WHERE id=?", (user, time.time(), reason, pid))
+    else:
+        cur.execute("UPDATE proverbs SET excluded=0, excluded_by=NULL, excluded_at=NULL, "
+                    "exclude_reason=NULL WHERE id=?", (pid,))
     con.commit(); con.close()
 
 
-def bulk_mark_excluded(pids, excluded=True):
+def bulk_mark_excluded(pids, excluded=True, user=None, reason=None):
     con = connect(); cur = con.cursor()
-    cur.executemany("UPDATE proverbs SET excluded=? WHERE id=?",
-                    [(1 if excluded else 0, int(p)) for p in pids])
+    if excluded:
+        cur.executemany("UPDATE proverbs SET excluded=1, excluded_by=?, excluded_at=?, "
+                        "exclude_reason=? WHERE id=?",
+                        [(user, time.time(), reason, int(p)) for p in pids])
+    else:
+        cur.executemany("UPDATE proverbs SET excluded=0, excluded_by=NULL, excluded_at=NULL, "
+                        "exclude_reason=NULL WHERE id=?", [(int(p),) for p in pids])
     con.commit(); con.close()
+
+
+def list_recent_exclusions(limit=30):
+    """Rows withdrawn by a named reviewer, newest first — the undo queue."""
+    con = connect()
+    rows = con.execute(
+        "SELECT id, text, gloss, people, excluded_by, excluded_at, exclude_reason "
+        "FROM proverbs WHERE excluded=1 AND excluded_at IS NOT NULL "
+        "ORDER BY excluded_at DESC LIMIT ?", (limit,)).fetchall()
+    con.close()
+    return [{"id": r[0], "text": r[1], "gloss": r[2], "people": r[3],
+             "excluded_by": r[4], "excluded_at": r[5], "exclude_reason": r[6]} for r in rows]
 
 
 def save_claims(id_claim_quality):

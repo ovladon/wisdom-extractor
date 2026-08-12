@@ -4,6 +4,37 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.36 — 2026-08-12
+Gloss review and corpus cleaning become one pass, and the agreement report stops
+overstating how much of the corpus is double-rated.
+
+- **Gloss review queue is a batch form with three outcomes**: keep the gloss, discard
+  the gloss but keep the proverb, or withdraw the row because it is not a saying.
+  Reviewing 870 items one button-press-and-rerun at a time was the real obstacle to
+  cleaning the collection.
+- **Withdrawal is attributable and reversible.** New `excluded_by`, `excluded_at` and
+  `exclude_reason` columns on `proverbs`; a "recently withdrawn" panel restores any row.
+  Nothing is ever deleted — an excluded row stays in the database and in the provenance
+  record, it simply stops being served, counted, clustered or mapped. The annotator
+  "not a saying" path and the automatic noise filter now record their provenance too.
+- **Curation is applied to the live server, not to the local snapshot.** The Admin
+  panel's default data source is `data/live_snapshot.db`, a copy pulled from the
+  server; the existing gloss accept/reject buttons wrote only there, so every decision
+  was discarded by the next refresh without any error. Decisions now go to the server
+  first via `scripts/push_curation.sh` and are mirrored locally only if that succeeds.
+- **`scripts/iaa_report.py` counted judgment rows where it claimed to count pairs.**
+  `pairs_multi_annotated` reported 174 while alpha, the release trigger and the Admin
+  panel all reported 107, because a pair the same person judged twice was counted as
+  two independent opinions. 174 of the 1,120 judgments on the current corpus are such
+  repeats. The report now deduplicates to the latest score per (pair, annotator),
+  matching the consensus engine, and the field is renamed `pairs_double_rated` with
+  `repeat_judgments_superseded` alongside it. Consequently the previously published
+  raw and binarized agreement figures were too high: raw exact agreement 0.7529 →
+  0.7290, binarized 0.9494 → 0.9286. Krippendorff's alpha is unchanged at 0.7536,
+  having always been computed on the deduplicated path.
+- `scripts/iaa_report.py` calls `init_db()` like its sibling scripts, so it upgrades an
+  archived database in place instead of crashing on it.
+
 ## v19.35 — 2026-08-12
 - `scripts/push_settings.sh` piped the key/value pairs into `python -`, which consumes
   standard input for the program itself, so nothing was ever read: the script reported

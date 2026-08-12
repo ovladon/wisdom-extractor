@@ -569,11 +569,11 @@ def judge(j: Judgment, request: Request):
                        source=_clean_source(j.source), decide_ms=_clean_ms(j.decide_ms))
     elif j.label == "exclude_a":
         _exclude_check(user)
-        mark_excluded(j.a_id, True)
+        mark_excluded(j.a_id, True, user=user, reason="not a saying (annotator)")
         _pool["by_id"].pop(j.a_id, None)
     elif j.label == "exclude_b":
         _exclude_check(user)
-        mark_excluded(j.b_id, True)
+        mark_excluded(j.b_id, True, user=user, reason="not a saying (annotator)")
         _pool["by_id"].pop(j.b_id, None)
     else:
         raise HTTPException(400, "bad label")

@@ -309,7 +309,7 @@ if _sel == 2:
     c1, c2 = st.columns(2)
     if c1.button("🧹 Run noise filter on existing rows (marks boilerplate as excluded)") and not df.empty:
         bad = [int(r["id"]) for _, r in df.iterrows() if not keep(r["text"])]
-        bulk_mark_excluded(bad, True)
+        bulk_mark_excluded(bad, True, user=user, reason="automatic noise filter")
         st.success(f"Excluded {len(bad)} noise rows (reversible in DB).")
         bump()
     if c2.button("⚗️ Canonicalize all (compute claims + quality)") and not df.empty:
@@ -475,7 +475,8 @@ if _sel == 5:
 
         def exclude(pid):
             if write_mode.startswith("Instant"):
-                mark_excluded(pid, True); bump()
+                mark_excluded(pid, True, user=user, reason="not a saying (annotate tab)")
+                bump()
             else:
                 st.session_state["pending_ops"].append({"op": "exclude", "pid": pid})
                 st.session_state["excluded_pending"].add(pid)
@@ -967,23 +968,117 @@ if _sel == 9:
                "identification is imperfect — romanised non-English, OCR damage and "
                "glossary definitions can pass as English — so these are withheld from "
                "annotators until accepted here.")
-    from core.persistence import review_gloss
+    from core.persistence import review_gloss, list_recent_exclusions
+
+    _LIVE_SRC = "Live corpus (auto-synced from server)"
+
+    def _push_curation(actions, src):
+        """Apply curation on the live server first; True means it is safe to mirror
+        locally. This panel's default data source is a snapshot pulled from the server,
+        so editing it alone would look like it worked and be discarded by the next
+        refresh — an entire review session lost without a single error message."""
+        if src != _LIVE_SRC:
+            return True                      # a workspace is its own separate corpus
+        import base64 as _b64
+        _payload = _b64.b64encode(json.dumps(actions).encode("utf-8")).decode("ascii")
+        _script = os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                               "scripts", "push_curation.sh")
+        try:
+            _r = subprocess.run(["bash", _script, _payload],
+                                capture_output=True, text=True, timeout=180)
+        except Exception as _e:
+            st.error(f"Could not reach the live server: {_e}. Nothing was changed.")
+            return False
+        if _r.returncode != 0:
+            st.error("The live server rejected the change — nothing was applied, "
+                     "here or there.")
+            st.code((_r.stderr or _r.stdout).strip()[:2000])
+            return False
+        return True
+
+    if (_done := st.session_state.pop("_gloss_done", None)):
+        st.success(_done)
+
     _pending = [r for r in list_proverbs(excluded=False)
                 if r.get("gloss_source") == "auto_unreviewed"]
-    st.metric("Awaiting review", f"{len(_pending):,}")
+    import sqlite3 as _sq3
+    _cx = _sq3.connect(_pers.DB_PATH)
+    _n_excluded = _cx.execute("SELECT COUNT(*) FROM proverbs WHERE excluded=1").fetchone()[0]
+    _cx.close()
+    _p1, _p2 = st.columns(2)
+    _p1.metric("Awaiting review", f"{len(_pending):,}")
+    _p2.metric("Withdrawn from the corpus", f"{_n_excluded:,}",
+               help="Kept in the database and in the provenance record; not served, "
+                    "counted, clustered or mapped.")
+
+    st.caption("Reviewing a gloss and cleaning the collection are the same pass, so there "
+               "are three outcomes: **keep** serves the gloss to annotators; **drop gloss** "
+               "keeps the proverb but stops offering it for judgment; **not a saying** "
+               "withdraws the row from the active corpus. Withdrawal never deletes anything "
+               "— the row stays in the database and in the provenance record, and is "
+               "reversible below.")
+
     if _pending:
         _n = st.slider("How many to review now", 5, 50, 10, key="_glossn")
-        for _r in _pending[:_n]:
-            with st.container():
-                st.markdown(f"**{_r.get('people')}** · proposed gloss:")
+        _reason = st.text_input("Reason recorded on withdrawals", value="not a saying",
+                                key="_glossreason")
+        _OPTS = ["⏭ later", "✅ keep", "✖ drop gloss", "🗑 not a saying"]
+        with st.form("gloss_review_batch"):
+            _picks = {}
+            for _r in _pending[:_n]:
+                st.markdown(f"**{_r.get('people') or 'culture unknown'}**")
                 st.info(_r["gloss"])
                 st.caption(f"source: {(_r.get('text') or '')[:220]}")
-                g1, g2, _ = st.columns([1, 1, 3])
-                if g1.button("✅ Accept", key=f"ga{_r['id']}"):
-                    review_gloss(_r["id"], True); st.rerun()
-                if g2.button("✖ Reject", key=f"gr{_r['id']}"):
-                    review_gloss(_r["id"], False); st.rerun()
+                _picks[_r["id"]] = st.radio("outcome", _OPTS, key=f"gq{_r['id']}",
+                                            horizontal=True, label_visibility="collapsed")
                 st.markdown("---")
+            _apply = st.form_submit_button("Apply to all of the above")
+        if _apply:
+            _acts = []
+            for _pid, _choice in _picks.items():
+                if _choice == _OPTS[1]:
+                    _acts.append({"pid": int(_pid), "action": "accept"})
+                elif _choice == _OPTS[2]:
+                    _acts.append({"pid": int(_pid), "action": "reject"})
+                elif _choice == _OPTS[3]:
+                    _acts.append({"pid": int(_pid), "action": "withdraw", "user": user,
+                                  "reason": (_reason.strip() or "not a saying")})
+            if not _acts:
+                st.info("Nothing selected — every item was left for later.")
+            elif _push_curation(_acts, _src):
+                _kept = sum(1 for a in _acts if a["action"] == "accept")
+                _dropped = sum(1 for a in _acts if a["action"] == "reject")
+                _gone = sum(1 for a in _acts if a["action"] == "withdraw")
+                for _a in _acts:                      # mirror into the local copy
+                    if _a["action"] == "accept":
+                        review_gloss(_a["pid"], True)
+                    elif _a["action"] == "reject":
+                        review_gloss(_a["pid"], False)
+                    else:
+                        mark_excluded(_a["pid"], True, user=user, reason=_a["reason"])
+                st.cache_data.clear()
+                st.session_state["_gloss_done"] = (
+                    f"{_kept} gloss(es) accepted · {_dropped} discarded · "
+                    f"{_gone} row(s) withdrawn from the corpus.")
+                st.rerun()
+
+    _recent = list_recent_exclusions(30)
+    if _recent:
+        with st.expander(f"↩︎ Recently withdrawn ({len(_recent)}) — restore any of these"):
+            st.caption("Withdrawals made from this panel, newest first. Restoring puts the "
+                       "row back into the active corpus exactly as it was.")
+            for _x in _recent:
+                _u1, _u2 = st.columns([5, 1])
+                _u1.markdown(f"*{(_x.get('gloss') or _x.get('text') or '')[:150]}* — "
+                             f"**{_x.get('people') or 'culture unknown'}**")
+                _u1.caption(f"withdrawn by {_x.get('excluded_by') or 'unknown'}"
+                            + (f" · {_x['exclude_reason']}" if _x.get("exclude_reason") else ""))
+                if _u2.button("Restore", key=f"unx{_x['id']}"):
+                    if _push_curation([{"pid": int(_x["id"]), "action": "restore"}], _src):
+                        mark_excluded(_x["id"], False)
+                        st.cache_data.clear()
+                        st.session_state["_gloss_done"] = "Row restored to the active corpus."
+                        st.rerun()
 
     # ---------- contested pairs ----------
     st.markdown("---")

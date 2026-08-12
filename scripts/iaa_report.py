@@ -13,7 +13,7 @@ import argparse, csv, os, sys
 from collections import Counter, defaultdict
 
 sys.path.insert(0, os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
-from core.persistence import list_constraints, list_proverbs
+from core.persistence import init_db, list_constraints, list_proverbs
 from core.annotation_quality import krippendorff_alpha_ordinal, _pair_key
 
 SCALE = [-1, 0, 1, 2, 3, 4]
@@ -65,14 +65,31 @@ def main():
     args = ap.parse_args()
     os.makedirs(args.out, exist_ok=True)
 
+    # Bring an older database up to the current schema first, as the other scripts do.
+    # Without this the report crashes on any archived or pre-migration copy rather than
+    # upgrading it in place, which is exactly the copy someone reproducing a published
+    # number would be holding.
+    init_db()
+
     cons = [c for c in list_constraints() if score_of(c) is not None]
     texts = {p["id"]: (p.get("gloss") or p["text"]) for p in list_proverbs(excluded=True)}
 
-    by_pair = defaultdict(list)   # pair -> [(score, user)]
-    for c in cons:
-        by_pair[_pair_key(c["a_id"], c["b_id"])].append((score_of(c), c.get("user") or "?"))
+    # One score per (pair, annotator): the latest, matching the consensus engine and
+    # overlap_stats. A pair the same person judged twice is one opinion, not two, so
+    # counting judgment rows would report more independent agreement than exists —
+    # this report previously said 174 "multi-annotated" pairs where alpha, the release
+    # trigger and the Admin panel all said 107.
+    ordered = sorted(cons, key=lambda c: (c.get("created_at") or 0))
+    latest = {}
+    for c in ordered:
+        latest[(_pair_key(c["a_id"], c["b_id"]), c.get("user") or "?")] = score_of(c)
 
-    multi = {p: v for p, v in by_pair.items() if len(v) >= 2}
+    by_pair = defaultdict(list)   # pair -> [(score, user)], one entry per annotator
+    for (pair, u), s in latest.items():
+        by_pair[pair].append((s, u))
+
+    multi = {p: v for p, v in by_pair.items() if len(v) >= 2}   # >= 2 DISTINCT annotators
+    repeats = len(cons) - len(latest)   # rows superseded by the same annotator re-judging
     exact = sum(1 for v in multi.values() if len({s for s, _ in v}) == 1)
     bin_agree = bin_total = 0
     for v in multi.values():
@@ -84,7 +101,7 @@ def main():
 
     alpha, n_units = krippendorff_alpha_ordinal(cons)
 
-    vol = Counter(u for _, votes in by_pair.items() for _, u in votes)
+    vol = Counter((c.get("user") or "?") for c in cons)   # judgments made, per annotator
     top2 = [u for u, _ in vol.most_common(2)]
     shared = []
     for p, v in multi.items():
@@ -114,7 +131,8 @@ def main():
         "annotations_total": len(cons),
         "annotators": dict(vol),
         "pairs_annotated": len(by_pair),
-        "pairs_multi_annotated": len(multi),
+        "pairs_double_rated": len(multi),      # >= 2 distinct annotators; equals alpha_units
+        "repeat_judgments_superseded": repeats,
         "raw_exact_agreement": round(exact / len(multi), 4) if multi else None,
         "binarized_agreement(>=3 vs <=1)": round(bin_agree / bin_total, 4) if bin_total else None,
         "krippendorff_alpha_ordinal": round(alpha, 4) if alpha is not None else None,
