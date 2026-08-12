@@ -9,6 +9,10 @@
 # public, and an admin write path on it would be a permanent attack surface added for
 # the sake of a few knobs. The SSH trust already exists and is used by pull_live_db.sh.
 #
+# The values are read back and compared afterwards. An earlier version piped them into
+# `python -`, which consumes stdin for the program itself, so nothing was ever read and
+# the script reported success while changing nothing.
+#
 # Usage:  ./scripts/push_settings.sh corroborate_adaptive=1 corroborate_target=0.45
 set -euo pipefail
 
@@ -29,20 +33,32 @@ for kv in "$@"; do
   esac
 done
 
-ssh "$HOST" bash -s -- "$@" <<'RMT'
+OUT=$(ssh "$HOST" bash -s -- "$@" <<'RMT'
 set -euo pipefail
 cd /root/wisdom-extractor/deploy
-printf '%s\n' "$@" | docker compose exec -T mobile python - <<'PY'
+docker compose exec -T mobile python -c '
 import sys
-from core.persistence import init_db, set_setting, SETTING_DEFAULTS, get_setting
+from core.persistence import init_db, set_setting, get_setting, SETTING_DEFAULTS
 init_db()
-for line in sys.stdin.read().split():
-    key, _, value = line.partition("=")
+bad = 0
+for arg in sys.argv[1:]:
+    key, _, value = arg.partition("=")
     if key not in SETTING_DEFAULTS:
-        print(f"  refused unknown setting: {key}")
-        continue
+        print("REFUSED unknown setting: " + key); bad = 1; continue
     set_setting(key, value, "admin-panel")
-    print(f"  {key} = {get_setting(key)}")
-PY
+    got = str(get_setting(key))
+    ok = got == str(value)
+    print(("  OK   " if ok else "  FAIL ") + key + " = " + got)
+    if not ok:
+        bad = 1
+sys.exit(bad)
+' "$@"
 RMT
-echo "Live settings updated. The annotation service picks them up within a minute."
+)
+STATUS=$?
+echo "$OUT"
+if [ "$STATUS" -ne 0 ]; then
+  echo "!! settings were NOT applied cleanly" >&2
+  exit "$STATUS"
+fi
+echo "Live settings updated and verified. The service picks them up within a minute."

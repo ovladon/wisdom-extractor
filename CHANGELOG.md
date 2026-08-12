@@ -4,6 +4,12 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.35 — 2026-08-12
+- `scripts/push_settings.sh` piped the key/value pairs into `python -`, which consumes
+  standard input for the program itself, so nothing was ever read: the script reported
+  success and changed nothing on the live server. Values are now passed as arguments,
+  read back, and compared; a mismatch fails the script. Shipped broken in v19.34.
+
 ## v19.34 — 2026-08-12
 Recruitment and routing: the same annotators now produce substantially more of the
 double-rated pairs every agreement statistic is computed from.
