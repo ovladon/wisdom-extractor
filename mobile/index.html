@@ -109,6 +109,12 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
       <div class="who" id="whoB"></div>
     </div>
   </div>
+  <div style="display:flex;justify-content:center;margin:-4px 0 10px">
+    <button id="bJudgeThis" hidden onclick="challengeShare()"
+      style="background:transparent;color:var(--accent);border:1px solid var(--line);
+             border-radius:999px;padding:7px 16px;font-size:13.5px;font-weight:600;width:auto">
+      🥋 Judge this! — send this pair to someone</button>
+  </div>
   <div class="actions">
     <button id="bDiff" onclick="score(0)">➖ Unrelated</button>
     <button id="bSame" onclick="showLevels()">🔗 Related…</button>
@@ -209,9 +215,15 @@ td,th{padding:7px 4px;border-bottom:1px solid var(--line);text-align:left}
 <script>
 let user=localStorage.getItem("wl_name")||"", code=localStorage.getItem("wl_code")||"";
 let human=localStorage.getItem("wl_human")||"", codeRequired=true, challengeId=null;
+let challengeEnabled=false, humanCheckAfter=0, pendingJudgments=[], shownAt=0;
+let invitedPair="", _renamed=false;
 try{ var _q=new URLSearchParams(location.search);
       var _c=_q.get("code")||_q.get("c");
-      if(_c){ code=_c.trim(); localStorage.setItem("wl_code",code); } }catch(e){}
+      if(_c){ code=_c.trim(); localStorage.setItem("wl_code",code); }
+      invitedPair=(_q.get("challenge")||"").trim(); }catch(e){}
+// Language of the human check: an English idiom is a comprehension test for a
+// Romanian speaker, and failing it says nothing about being human.
+const humanLang=(navigator.language||"en").toLowerCase().startsWith("ro")?"ro":"en";
 let akey=localStorage.getItem("wl_akey")||"";
 if(!akey){akey=(self.crypto&&crypto.randomUUID)?crypto.randomUUID()
   :String(Math.random()).slice(2)+Date.now();localStorage.setItem("wl_akey",akey);}
@@ -232,6 +244,16 @@ async function api(path,opts){
     return null;
   }
   if(r.status===409){
+    // Nickname already bound to another device. Hand over a working name rather than
+    // sending someone back to the setup screen to invent one — that is where they leave.
+    let sug="";
+    try{ const d=await r.json(); sug=(d.detail&&d.detail.suggestion)||""; }catch(e){}
+    if(sug){
+      user=sug; localStorage.setItem("wl_name",user); _renamed=true;
+      $("inName").value=user;
+      toast(`That name was taken — you are “${sug}” 🌱`);
+      return null;
+    }
     $("game").classList.add("hidden");$("board").classList.add("hidden");
     $("humanModal").classList.add("hidden");
     $("setup").classList.remove("hidden");
@@ -249,7 +271,7 @@ async function showHuman(){
   $("game").classList.add("hidden");$("setup").classList.add("hidden");
   $("humanModal").classList.remove("hidden");
   $("humanPrompt").textContent="Fetching your proverb…";$("humanMsg").textContent="";
-  const d=await api("/api/human");
+  const d=await api("/api/human?lang="+humanLang);
   if(d){
     challengeId=d.challenge_id;$("humanPrompt").textContent=d.prompt;
     $("humanAnswer").value="";$("humanAnswer").focus();
@@ -269,11 +291,12 @@ async function submitHuman(){
   if(r.ok){
     const d=await r.json();human=d.token;localStorage.setItem("wl_human",human);
     $("humanModal").classList.add("hidden");$("game").classList.remove("hidden");
-    toast("Welcome, human 🌿");
+    const held=await flushPending();
+    toast(held?`Welcome, human 🌿 ${held} judgment${held>1?"s":""} saved`:"Welcome, human 🌿");
     if(!pair)nextPair();
   }else{
     $("humanMsg").textContent="Not quite — try this one instead:";
-    const d=await api("/api/human");
+    const d=await api("/api/human?lang="+humanLang);
     if(d){challengeId=d.challenge_id;$("humanPrompt").textContent=d.prompt;
           $("humanAnswer").value="";$("humanAnswer").focus();}
   }
@@ -301,7 +324,11 @@ async function suggestFix(which){
 async function nextPair(){
   // alternate strategies to keep it fresh: mostly uncertain, sometimes disputed
   strategy=(session%7===6)?"disputed":"uncertain";
-  const d=await api(`/api/pair?strategy=${strategy}&user=${encodeURIComponent(user)}`);
+  // An invitation is honoured once, for the pair it names; after that the ordinary
+  // routing takes over, so an invited visitor becomes an ordinary annotator.
+  const inv=invitedPair; invitedPair="";
+  const d=await api(`/api/pair?strategy=${strategy}&user=${encodeURIComponent(user)}`
+                    +(inv?`&challenge=${encodeURIComponent(inv)}`:""));
   if(!d){
     $("textA").textContent="Couldn't load a pair — tap here to retry 🔁";
     $("origA").style.display="none";$("whoA").textContent="";
@@ -317,16 +344,56 @@ async function nextPair(){
   $("origA").textContent=d.a.original?d.a.original:""; $("origA").style.display=d.a.original?"":"none";
   $("origB").textContent=d.b.original?d.b.original:""; $("origB").style.display=d.b.original?"":"none";
   const c=$("card");c.style.transform="";c.style.opacity=1;
+  shownAt=Date.now();
+  const jb=$("bJudgeThis"); if(jb)jb.hidden=!challengeEnabled;
 }
 
 function showLevels(){$("levels").classList.toggle("hidden");}
 function toggleGuide(){$("guide").classList.toggle("hidden");}
 
+// The human check stays mandatory on the server: /api/judge still refuses without a
+// token. What changes is when it is asked for — judgments made before it are held in
+// the browser and posted only once it passes, so the wall stops standing between a
+// curious visitor and their first judgment without weakening the check itself.
+async function sendJudgment(body){
+  // If the nickname was auto-renamed mid-flight, resend under the new one rather than
+  // dropping the judgment: a rename must never cost somebody the answer they just gave.
+  _renamed=false;
+  body.user=user;
+  let r=await api("/api/judge",{method:"POST",headers:{"Content-Type":"application/json"},
+                                body:JSON.stringify(body)});
+  if(r===null&&_renamed){
+    body.user=user;
+    r=await api("/api/judge",{method:"POST",headers:{"Content-Type":"application/json"},
+                              body:JSON.stringify(body)});
+  }
+  return r;
+}
+async function postJudgment(body){
+  if(!human){
+    pendingJudgments.push(body);
+    // Someone who followed a "Judge this!" link often came for that one pair and
+    // leaves straight after. Ask them to confirm immediately rather than at the usual
+    // threshold, or the second rating we invited them for dies unsent in the buffer.
+    const invited=pendingJudgments.some(b=>b.source==="challenge");
+    if(invited||pendingJudgments.length>=Math.max(1,humanCheckAfter))showHuman();
+    return;
+  }
+  return sendJudgment(body);
+}
+async function flushPending(){
+  const held=pendingJudgments.length;
+  while(pendingJudgments.length)await sendJudgment(pendingJudgments.shift());
+  return held;
+}
+function elapsed(){ return shownAt?Math.max(1,Date.now()-shownAt):null; }
+
 async function score(v){
   if(!pair)return;
   $("levels").classList.add("hidden");
-  const body={a_id:pair.a.id,b_id:pair.b.id,score:v,user,code};
-  api("/api/judge",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const body={a_id:pair.a.id,b_id:pair.b.id,score:v,user,code,
+              source:pair.strategy||"",decide_ms:elapsed()};
+  postJudgment(body);
   session++;streak++;buzz(12);
   $("streak").textContent=`✦ ${session} this session`;
   if(session%10===0)toast(`${session} judgments — you're on fire 🔥`);
@@ -337,8 +404,9 @@ async function score(v){
 async function judge(label){
   if(!pair)return;
   $("levels").classList.add("hidden");
-  const body={a_id:pair.a.id,b_id:pair.b.id,label,user,code};
-  api("/api/judge",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const body={a_id:pair.a.id,b_id:pair.b.id,label,user,code,
+              source:pair.strategy||"",decide_ms:elapsed()};
+  postJudgment(body);
   toast("Marked. Thank you!");
   animateOut(0);
   setTimeout(nextPair,140);
@@ -387,6 +455,38 @@ async function showBoard(){
 }
 function showGame(){$("board").classList.add("hidden");$("game").classList.remove("hidden");}
 
+/* "Judge this!" — an invitation to judge one specific pair.
+   The link carries the two proverb ids and nothing else: not the sender's answer, not
+   their name, not whether they thought the pair matched. The recipient therefore judges
+   the same pair independently, which is exactly what a second rating has to be, and the
+   invitation only decides which pair they see. Never add the sender's verdict to this
+   text or this URL — it would turn an independent judgment into an echo. */
+function challengeURL(){
+  if(!pair)return inviteURL();
+  var u="https://annotate.wisdomextractor.com/?challenge="+pair.a.id+"-"+pair.b.id;
+  return code?u+"&code="+encodeURIComponent(code):u;
+}
+function challengeText(){
+  if(!pair)return inviteText();
+  return "“"+pair.a.gloss+"” — "+pair.a.people+"\n“"+pair.b.gloss+"” — "+pair.b.people
+       +"\n\nSame idea, or not? Judge this!";
+}
+async function challengeShare(){
+  if(!pair)return;
+  var url=challengeURL(), txt=challengeText();
+  if(navigator.share){
+    try{ await navigator.share({title:"Judge this!",text:txt,url:url}); return; }catch(e){}
+  }
+  var full=txt+"\n"+url;
+  if(navigator.clipboard){
+    try{ await navigator.clipboard.writeText(full);
+         toast("Copied — send it to someone 🥋"); return; }catch(e){}
+  }
+  var i=document.createElement("textarea");i.value=full;document.body.appendChild(i);
+  i.select();try{document.execCommand("copy");}catch(e){}document.body.removeChild(i);
+  toast("Copied — send it to someone 🥋");
+}
+
 function inviteURL(){
   var u = "https://annotate.wisdomextractor.com/";
   return code ? u + "?code=" + encodeURIComponent(code) : u;
@@ -428,11 +528,14 @@ async function boot(){
   const d=await api(`/api/me?user=${encodeURIComponent(user)}`);
   if(!d)return;
   $("corpusline").textContent=`${d.corpus.proverbs.toLocaleString()} sayings · ${d.corpus.peoples} peoples`;
-  if(!human){showHuman();return;}
+  if(!human&&humanCheckAfter<=0){showHuman();return;}
   nextPair();
 }
 (async()=>{
-  try{const c=await (await fetch("/api/config")).json();codeRequired=c.code_required;}catch(e){}
+  try{const c=await (await fetch("/api/config")).json();
+      codeRequired=c.code_required;
+      challengeEnabled=!!c.challenge_enabled;
+      humanCheckAfter=c.human_check_after||0;}catch(e){}
   if(!codeRequired){ $("inCode").style.display="none"; $("inCode").value=""; }
   else if(code){ $("inCode").value=code;
     var n=$("setupMsg"); n.style.color="var(--same)";

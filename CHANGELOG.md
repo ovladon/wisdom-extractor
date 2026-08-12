@@ -4,6 +4,44 @@ All notable transformations of this project. Versions before v19 predate this gi
 repository and are imported as dated archive commits (tags `v7.7`–`v18`); their
 snapshots were recovered from the project's version folders and `v8-18.zip`.
 
+## v19.34 — 2026-08-12
+Recruitment and routing: the same annotators now produce substantially more of the
+double-rated pairs every agreement statistic is computed from.
+
+- **Adaptive corroboration.** The fixed 1-in-5 second-opinion rate becomes a controller
+  aimed at a target double-rated share. Held at equilibrium `p/(1-p)`, so a 45% target
+  settles near 31% of requests once the backlog clears, with a proportional term to
+  clear an existing backlog faster and a 60% ceiling so the corpus keeps widening.
+  Measured on a copy of the live corpus: 300 simulated judgments produced +87
+  double-rated pairs under the old fixed rate and +141 under the controller.
+- **Corroboration targets are weighted by the square root of each annotator's backlog.**
+  One annotator was the sole rater of 35.7% of singly-judged pairs, so uniform sampling
+  would have made a third of all new agreement agreement with one person; this reduces
+  that to 19.8% without exhausting the small contributors.
+- **`constraints.source` and `constraints.decide_ms`.** Routing provenance and
+  deliberation time per judgment. Existing rows stay NULL, meaning organic and
+  pre-instrumentation. Admin reports alpha with each strategy removed, so a change in
+  routing can be shown not to have manufactured the agreement it reports.
+- **Two-tier rate limiting.** 90 requests/minute per account as before, plus a separate
+  and much higher per-address ceiling (default 600). The single per-address limit
+  throttled an entire seminar room sharing one NAT address to roughly 40 judgments a
+  minute between them — the exact session the project most wants to run.
+- **"Judge this!"** An invitation to judge one specific pair, shared from the pair
+  itself. The link carries the two proverb ids and nothing else: not the sender's
+  answer, not their name. Every accepted invitation is by construction a second
+  independent rating. Off by default.
+- **Onboarding.** A taken nickname now returns a working suggestion instead of bouncing
+  the visitor back to the setup screen; the human check is offered in Romanian as well
+  as English, and compares without diacritics; it can be deferred by N judgments, held
+  in the browser and posted once it passes — the server still refuses untokened
+  judgments, so the check is unchanged in strength.
+- **Operational settings live in the database** (`settings` table) and are editable from
+  the Admin panel, which pushes them to the live server over the existing SSH trust
+  rather than exposing an admin endpoint on a public host.
+- **`deploy/update_server.sh`** backs up the database, deploys, waits for the API to
+  actually answer, and rolls back to the previous commit if it does not. The previous
+  procedure was a bare `docker compose up -d --build` with no health gate.
+
 ## v19.33 — 2026-08-13
 - Gloss extraction uses a statistical language identifier (langid, offline) together
   with the existing word-list score; both must agree, and fragments and bibliographic

@@ -4,7 +4,7 @@ Adds to the v18 schema: people / claim / quality_score / cluster_id columns,
 automatic in-place migration of older wisdom.db files, bulk inserts, and
 a culture backfill that recovers the `people` label from source URLs.
 """
-import sqlite3, time, os, hashlib, re, csv
+import sqlite3, time, os, hashlib, re, csv, secrets
 
 DB_PATH = os.environ.get("WISDOM_DB_PATH", "wisdom.db")
 
@@ -75,6 +75,11 @@ def init_db():
       pid INTEGER, old_text TEXT, new_text TEXT, user TEXT,
       created_at REAL, applied INTEGER DEFAULT 0
     );
+    CREATE TABLE IF NOT EXISTS settings(
+      key TEXT PRIMARY KEY,          -- operational knobs, editable from the Admin panel
+      value TEXT,                    -- so the live server changes behaviour without a redeploy
+      updated_at REAL, updated_by TEXT
+    );
     """)
     # migrate: add any missing proverb columns (upgrades v15-v18 databases in place)
     cur.execute("PRAGMA table_info(proverbs)")
@@ -92,8 +97,17 @@ def init_db():
         cur.execute("ALTER TABLE annotators ADD COLUMN blocked_at REAL")
     # graded semantic-equivalence score (Pelican scale: 4..0 and -1), alongside legacy label
     cur.execute("PRAGMA table_info(constraints)")
-    if "score" not in {r[1] for r in cur.fetchall()}:
+    _ccols = {r[1] for r in cur.fetchall()}
+    if "score" not in _ccols:
         cur.execute("ALTER TABLE constraints ADD COLUMN score INTEGER")
+    # How the pair reached the annotator, and how long the judgment took. Both are
+    # provenance, never inputs to a score: they let agreement be recomputed with any
+    # routing strategy excluded, so a change in routing can be shown not to have
+    # manufactured the agreement it reports. NULL = organic, pre-instrumentation.
+    if "source" not in _ccols:
+        cur.execute("ALTER TABLE constraints ADD COLUMN source TEXT")
+    if "decide_ms" not in _ccols:
+        cur.execute("ALTER TABLE constraints ADD COLUMN decide_ms INTEGER")
     _pseudonymize_legacy_users(cur)
     cur.executescript("""
     CREATE INDEX IF NOT EXISTS idx_proverbs_excluded ON proverbs(excluded);
@@ -144,6 +158,81 @@ def nickname_of(uid):
 
 def _hash_text(t):
     return hashlib.sha256(str(t).strip().lower().encode("utf-8")).hexdigest()
+
+
+# ---------- settings ----------
+# Operational knobs live in the database, not in module constants, because the
+# Admin panel runs on the laptop while the annotation server runs elsewhere: a
+# shared table is the only channel between them that does not require a redeploy.
+# Every default here reproduces the behaviour that shipped before settings existed,
+# so an empty table and a fresh install behave identically.
+
+SETTING_DEFAULTS = {
+    "corroborate_adaptive": "0",     # 0 = legacy fixed 1-in-N, 1 = aim at a target rate
+    "corroborate_target": "0.45",    # wanted share of judged pairs carrying >= 2 raters
+    "corroborate_every": "5",        # legacy fixed rate, and the floor/fallback
+    "rate_max_account": "90",        # requests per minute per annotator
+    "rate_max_ip": "600",            # requests per minute per address (bot guard)
+    "human_check_after": "0",        # judgments allowed before the human check (0 = ask first)
+    "challenge_enabled": "0",        # "Judge this!" per-pair invitations
+}
+
+
+def get_setting(key, default=None):
+    """Read a knob. Falls back to SETTING_DEFAULTS, then to the supplied default."""
+    con = connect()
+    row = con.execute("SELECT value FROM settings WHERE key=?", (key,)).fetchone()
+    con.close()
+    if row is not None and row[0] is not None:
+        return row[0]
+    return SETTING_DEFAULTS.get(key, default)
+
+
+def get_setting_float(key, default=0.0):
+    try:
+        return float(get_setting(key))
+    except (TypeError, ValueError):
+        return default
+
+
+def get_setting_int(key, default=0):
+    try:
+        return int(float(get_setting(key)))
+    except (TypeError, ValueError):
+        return default
+
+
+def get_setting_bool(key, default=False):
+    v = str(get_setting(key) or "").strip().lower()
+    if v in ("1", "true", "yes", "on"):
+        return True
+    if v in ("0", "false", "no", "off"):
+        return False
+    return default
+
+
+def set_setting(key, value, user="admin"):
+    con = connect()
+    con.execute("INSERT INTO settings(key,value,updated_at,updated_by) VALUES(?,?,?,?) "
+                "ON CONFLICT(key) DO UPDATE SET value=excluded.value, "
+                "updated_at=excluded.updated_at, updated_by=excluded.updated_by",
+                (key, str(value), time.time(), user))
+    con.commit(); con.close()
+
+
+def all_settings():
+    """Every knob with its effective value and whether it has been overridden."""
+    con = connect()
+    rows = {r[0]: (r[1], r[2], r[3]) for r in
+            con.execute("SELECT key,value,updated_at,updated_by FROM settings").fetchall()}
+    con.close()
+    out = []
+    for k, dflt in SETTING_DEFAULTS.items():
+        v = rows.get(k)
+        out.append({"key": k, "value": v[0] if v else dflt, "default": dflt,
+                    "overridden": v is not None,
+                    "updated_at": v[1] if v else None, "updated_by": v[2] if v else None})
+    return out
 
 
 # ---------- sources ----------
@@ -446,6 +535,33 @@ def claim_nickname(nickname, device_key):
         ok = False
     con.close()
     return ok
+
+
+def nickname_taken(nickname, device_key):
+    """True if this nickname is already bound to a different device. Read-only —
+    unlike claim_nickname it creates no annotator row, so it is safe to call while
+    hunting for a free suggestion."""
+    if not device_key:
+        return False
+    kh = hashlib.sha256(device_key.encode("utf-8")).hexdigest()
+    con = connect()
+    row = con.execute("SELECT key_hash FROM annotators WHERE nickname=?", (nickname,)).fetchone()
+    con.close()
+    return bool(row) and row[0] is not None and row[0] != kh
+
+
+def suggest_nickname(nickname, device_key, limit=40):
+    """First free variant of a taken nickname: Vlad -> Vlad2, Vlad3, ...
+    Bouncing someone back to the setup screen to invent a new name loses annotators
+    who were one tap from their first judgment; handing them a working name does not."""
+    base = (nickname or "").strip()[:36] or "annotator"
+    if not nickname_taken(base, device_key):
+        return base
+    for n in range(2, limit + 2):
+        cand = f"{base}{n}"
+        if not nickname_taken(cand, device_key):
+            return cand
+    return f"{base}{secrets.randbelow(9000) + 1000}"
 
 
 def add_duplicate_report(a_id, b_id, user):
@@ -831,12 +947,13 @@ def list_duplicate_reports():
     con.close(); return rows
 
 
-def add_constraint(a_id, b_id, label, user, score=None):
+def add_constraint(a_id, b_id, label, user, score=None, source=None, decide_ms=None):
     if score is not None and label is None:
         label = SCORE_TO_LABEL.get(int(score), "theme")
     con = connect(); cur = con.cursor()
-    cur.execute("INSERT INTO constraints(a_id,b_id,label,score,user,created_at) VALUES(?,?,?,?,?,?)",
-                (a_id, b_id, label, score, user, time.time()))
+    cur.execute("INSERT INTO constraints(a_id,b_id,label,score,user,created_at,source,decide_ms) "
+                "VALUES(?,?,?,?,?,?,?,?)",
+                (a_id, b_id, label, score, user, time.time(), source, decide_ms))
     con.commit(); con.close()
 
 
@@ -854,11 +971,13 @@ def bulk_apply(pending_ops):
 def list_constraints(label=None):
     con = connect(); cur = con.cursor()
     if label:
-        cur.execute("SELECT a_id,b_id,label,score,user FROM constraints WHERE label=?", (label,))
+        cur.execute("SELECT a_id,b_id,label,score,user,source,decide_ms,created_at "
+                    "FROM constraints WHERE label=?", (label,))
     else:
-        cur.execute("SELECT a_id,b_id,label,score,user FROM constraints")
+        cur.execute("SELECT a_id,b_id,label,score,user,source,decide_ms,created_at FROM constraints")
     rows = cur.fetchall(); con.close()
-    return [{"a_id": r[0], "b_id": r[1], "label": r[2], "score": r[3], "user": r[4]} for r in rows]
+    return [{"a_id": r[0], "b_id": r[1], "label": r[2], "score": r[3], "user": r[4],
+             "source": r[5], "decide_ms": r[6], "created_at": r[7]} for r in rows]
 
 
 def stats():
@@ -894,8 +1013,9 @@ def leaderboard(top=50):
 
 def export_annotations():
     con = connect(); cur = con.cursor()
-    cur.execute("SELECT a_id,b_id,label,score,user,created_at FROM constraints")
-    cons = [{"a_id": r[0], "b_id": r[1], "label": r[2], "score": r[3], "user": r[4], "created_at": r[5]}
+    cur.execute("SELECT a_id,b_id,label,score,user,created_at,source,decide_ms FROM constraints")
+    cons = [{"a_id": r[0], "b_id": r[1], "label": r[2], "score": r[3], "user": r[4],
+             "created_at": r[5], "source": r[6], "decide_ms": r[7]}
             for r in cur.fetchall()]
     cur.execute("SELECT id FROM proverbs WHERE excluded=1")
     excl = [r[0] for r in cur.fetchall()]

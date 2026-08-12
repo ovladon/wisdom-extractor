@@ -21,6 +21,7 @@ from core.persistence import (
     add_constraint, bulk_apply, list_constraints, stats, leaderboard,
     export_annotations, backfill_people_from_urls, enrich_family_region,
     infer_people_from_url, backfill_attestation_years, annotator_uid,
+    get_setting, set_setting, all_settings, SETTING_DEFAULTS,
 )
 from core.cleaner import keep, quality_score, strip_citations, extract_attestation_year
 from core.canonicalize import canonicalize, claim_basis
@@ -795,6 +796,169 @@ if _sel == 9:
              "uid": r["uid"], "judgments": r["judgments"],
              "share": f"{r['share']*100:.0f}%", "reliability": r["reliability"]}
             for r in _an["rows"]]), use_container_width=True, hide_index=True)
+
+    # ---------- annotation routing ----------
+    st.markdown("---")
+    st.markdown("### 🎯 Annotation routing")
+    st.caption("Which pairs the live server offers. Routing decides what gets judged, "
+               "never what the judgment is: no one is shown a pair twice, and no one ever "
+               "sees another annotator's answer. Changes take effect within a minute, "
+               "without a redeploy.")
+
+    _by_pair = {}
+    for _c in _cons:
+        _by_pair.setdefault((min(_c["a_id"], _c["b_id"]), max(_c["a_id"], _c["b_id"])),
+                            set()).add(_c["user"])
+    _dbl = sum(1 for _u in _by_pair.values() if len(_u) >= 2)
+    _reservoir = sum(1 for _u in _by_pair.values() if len(_u) == 1)
+    _rate_now = _dbl / len(_by_pair) if _by_pair else 0.0
+
+    try:
+        from scripts.corpus_release_check import last_release as _lr2, GROWTH_DOUBLE as _GD
+        _need = max(0, (_lr2() or {}).get("double_rated", 0) + _GD - _dbl)
+    except Exception:
+        _need = max(0, 185 - _dbl)
+
+    r1, r2, r3, r4 = st.columns(4)
+    r1.metric("Double-rated pairs", _dbl)
+    r2.metric("Awaiting a second opinion", _reservoir,
+              help="Judged once. Each one is a double-rated pair for the cost of a single "
+                   "judgment — no new proverbs, no new annotators.")
+    r3.metric("Current double-rate", f"{_rate_now*100:.0f}%")
+    r4.metric("To next release trigger", _need if _need else "reached")
+
+    _adaptive = st.checkbox(
+        "Adaptive corroboration", value=get_setting("corroborate_adaptive") == "1",
+        help="Off = the shipped fixed rate (one request in N). On = aim at the target "
+             "share below.")
+    _target = st.slider("Target double-rated share", 0.05, 0.80,
+                        float(get_setting("corroborate_target")), 0.05,
+                        help="Held at equilibrium p/(1-p), so a 45% target means about "
+                             "31% of requests corroborate once the backlog is cleared.")
+    _every = st.number_input("Fixed rate when adaptive is off (1 in N)", 1, 50,
+                             int(float(get_setting("corroborate_every"))))
+
+    if _adaptive and _by_pair:
+        _p = min(0.60, max(1.0 / max(1, _every),
+                           _target / (1 + _target) + 0.5 * max(0.0, _target - _rate_now)))
+    else:
+        _p = 1.0 / max(1, _every)
+    st.caption(f"At the current backlog this serves a second opinion on **{_p*100:.0f}%** "
+               f"of requests." + (f" Reaching the next release trigger would take roughly "
+                                  f"**{int(_need / _p)} judgments**." if _need and _p else ""))
+    if _reservoir < 50:
+        st.warning("The backlog of singly-judged pairs is nearly exhausted — corroboration "
+                   "has little left to work on, so lower the target and let the corpus widen.")
+
+    _c1, _c2 = st.columns(2)
+    _challenge = _c1.checkbox('"Judge this!" invitations',
+                              value=get_setting("challenge_enabled") == "1",
+                              help="A share button on each pair, opening that exact pair for "
+                                   "someone else. The link carries no answer, so the second "
+                                   "judgment stays independent.")
+    _hafter = _c2.number_input("Judgments before the human check", 0, 10,
+                               int(float(get_setting("human_check_after"))),
+                               help="0 = ask before the first pair (as shipped). Higher = hold "
+                                    "judgments in the browser and post them once the check "
+                                    "passes. The server still refuses untokened judgments.")
+
+    st.markdown("**Who owns the backlog** — corroboration is weighted to temper this, so "
+                "agreement does not become agreement with whoever judged most.")
+    import collections as _cl
+    _owner = _cl.Counter(next(iter(_u)) for _u in _by_pair.values() if len(_u) == 1)
+    if _owner:
+        _tot = sum(_owner.values())
+        st.dataframe(pd.DataFrame([
+            {"uid": _u, "pairs awaiting a second opinion": _n,
+             "share of backlog": f"{_n/_tot*100:.0f}%"}
+            for _u, _n in _owner.most_common(10)]),
+            use_container_width=True, hide_index=True)
+
+    st.markdown("**Limits** — the per-account limit is fair use; the per-address limit is the "
+                "bot guard. A seminar room shares one address, so the address ceiling has to "
+                "hold a whole room at once.")
+    _l1, _l2 = st.columns(2)
+    _racct = _l1.number_input("Requests per minute, per account", 10, 1000,
+                              int(float(get_setting("rate_max_account"))))
+    _rip = _l2.number_input("Requests per minute, per address", 60, 20000,
+                            int(float(get_setting("rate_max_ip"))))
+    st.caption(f"At roughly two requests per judgment, the address ceiling supports about "
+               f"**{_rip//2} judgments a minute** from one room — around "
+               f"**{max(1, _rip//2//6)} people** judging at a brisk six a minute.")
+
+    _wanted = {"corroborate_adaptive": 1 if _adaptive else 0,
+               "corroborate_target": _target,
+               "corroborate_every": _every,
+               "challenge_enabled": 1 if _challenge else 0,
+               "human_check_after": _hafter,
+               "rate_max_account": _racct,
+               "rate_max_ip": _rip}
+
+    st.caption("This panel reads a snapshot, so saving here changes nothing in production. "
+               "Pushing sends the values to the live server's own database over the same "
+               "SSH trust the snapshot pull uses — no admin endpoint is exposed on the "
+               "public server.")
+    _b1, _b2 = st.columns(2)
+    if _b1.button("💾 Save locally only"):
+        for _k, _v in _wanted.items():
+            set_setting(_k, _v, user)
+        st.success("Saved to the local database. The live server is unchanged.")
+    if _b2.button("🚀 Push to the live server"):
+        _args = [f"{_k}={_v}" for _k, _v in _wanted.items()]
+        try:
+            _r = subprocess.run(["bash", os.path.join(os.path.dirname(os.path.abspath(__file__)),
+                                                      "scripts", "push_settings.sh")] + _args,
+                                capture_output=True, text=True, timeout=120)
+            if _r.returncode == 0:
+                for _k, _v in _wanted.items():
+                    set_setting(_k, _v, user)
+                st.success("Pushed to the live server.")
+                st.code(_r.stdout.strip() or "(no output)")
+            else:
+                st.error("Push failed — the live server is unchanged.")
+                st.code((_r.stderr or _r.stdout).strip()[:2000])
+        except Exception as _e:
+            st.error(f"Could not reach the live server: {_e}")
+
+    with st.expander("Current settings, and which have been changed from the default"):
+        st.dataframe(pd.DataFrame(all_settings()), use_container_width=True, hide_index=True)
+
+    # ---------- agreement by routing strategy ----------
+    st.markdown("---")
+    st.markdown("### Agreement, with each routing strategy removed")
+    st.caption("The check that matters after changing how pairs are chosen: if alpha holds "
+               "when a strategy's judgments are dropped, that strategy collected agreement "
+               "rather than manufacturing it. Judgments recorded before routing was "
+               "instrumented carry no strategy and count as organic.")
+    _srcs = sorted({(_c.get("source") or "organic").split(":")[0] for _c in _cons})
+    if len(_cons) and len(_srcs) > 1:
+        _rows = [{"subset": "all judgments", "n": len(_cons)}]
+        for _s in _srcs:
+            _keep = [_c for _c in _cons if (_c.get("source") or "organic").split(":")[0] != _s]
+            _rows.append({"subset": f"excluding '{_s}'", "n": len(_keep)})
+        for _r in _rows:
+            _sub = _cons if _r["subset"] == "all judgments" else [
+                _c for _c in _cons
+                if (_c.get("source") or "organic").split(":")[0]
+                != _r["subset"].split("'")[1]]
+            _a = alpha_with_ci(_sub, B=120)
+            _o = overlap_stats(_sub)
+            _r.update({"alpha": _a["alpha"], "95% CI": f"{_a.get('lo')} – {_a.get('hi')}",
+                       "double-rated": _o["multi_rated"]})
+        st.dataframe(pd.DataFrame(_rows), use_container_width=True, hide_index=True)
+    else:
+        st.caption("Only one provenance class so far — this table becomes informative once "
+                   "judgments arrive through more than one routing strategy.")
+
+    _timed = [_c.get("decide_ms") for _c in _cons if _c.get("decide_ms")]
+    if _timed:
+        _timed_sorted = sorted(_timed)
+        _med = _timed_sorted[len(_timed_sorted) // 2]
+        _fast = sum(1 for _t in _timed if _t < 1500)
+        st.caption(f"Deliberation time recorded on {len(_timed):,} judgments — median "
+                   f"{_med/1000:.1f}s, {_fast} under 1.5s. Judgments arriving at machine "
+                   f"speed *and* machine regularity are the only visible trace of automated "
+                   f"answering, which otherwise resembles an unusually reliable annotator.")
 
     # ---------- gloss review queue ----------
     st.markdown("---")

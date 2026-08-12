@@ -17,3 +17,7 @@ backups/
 *.bak.*
 deploy/host.conf
 data/adjudications.db
+
+# analysis outputs written into the working directory by scripts/iaa_report.py
+iaa_report.json
+iaa_disagreements.csv
