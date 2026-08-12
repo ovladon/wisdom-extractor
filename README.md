@@ -55,6 +55,14 @@ per-version copies or zips by hand anymore. Instead:
 Browse any historical version with `git checkout v10` (return with `git checkout main`),
 or compare versions: `git diff v18 v19.2 --stat`.
 
+## Corrections
+
+Errors found in this project's own published statements are recorded permanently in
+[`CORRECTIONS.md`](CORRECTIONS.md), whether or not anyone else noticed them and whether
+or not the corrected value flatters us. Corpus versions are cut on pre-registered
+data-volume triggers, never on what a statistic shows; see
+[`CORPUS_RELEASE_CRITERIA.md`](CORPUS_RELEASE_CRITERIA.md).
+
 ## Citing
 
 Software (always resolves to the latest version): DOI [10.5281/zenodo.21413838](https://doi.org/10.5281/zenodo.21413838).

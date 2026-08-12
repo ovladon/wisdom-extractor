@@ -6,11 +6,27 @@
   "peoples": 76,
   "judgments": 237,
   "consensus_pairs": 229,
-  "double_rated": 35,
+  "double_rated": 13,
   "annotators": 4,
-  "alpha": 0.752,
+  "alpha": null,
   "alpha_ci": [
     null,
     null
-  ]
+  ],
+  "corrected": {
+    "date": "2026-08-12",
+    "see": "CORRECTIONS.md",
+    "reason": "double_rated and alpha were computed over pairs with >=2 judgment rows rather than >=2 distinct annotators, so an annotator re-judging a pair counted as two independent opinions",
+    "superseded": {
+      "double_rated": 35,
+      "alpha": 0.752
+    },
+    "recomputed": {
+      "double_rated": 13,
+      "alpha": 0.968,
+      "alpha_ci": [-0.087, 1.0],
+      "note": "alpha is set to null above rather than 0.968 deliberately: at 13 units the confidence interval spans essentially the whole admissible range, so no agreement estimate is defensible for this release. The recomputed value is recorded here for traceability, not for quotation."
+    },
+    "release_trigger_effect": "the +150 double-rated trigger now fires at 163 rather than 185, i.e. earlier than the erroneous baseline would have"
+  }
 }
