@@ -12,9 +12,9 @@ the first.
 
 ## 2026-08-12 — Agreement statistics counted judgments, not annotators
 
-**Severity:** affects one published statistic and one release-trigger baseline. No
-analysis in any manuscript is affected. The ConsILR-2025 conference paper is unaffected —
-it reports no inter-annotator agreement statistic.
+**Severity:** affects one published statistic and one release-trigger baseline. The
+ConsILR-2025 conference paper is unaffected, as it reports no inter-annotator agreement
+statistic.
 
 ### What was wrong
 
@@ -34,7 +34,7 @@ Annotators were, in part, being compared with themselves.
 | `.github/release-notes/v19.34.md` | "double-rated pairs stand at 107 against a threshold of **185**" | superseded; correct threshold is **163**. The release note is left as published — it is a dated record |
 | `scripts/iaa_report.py` output | `pairs_multi_annotated` | fixed in v19.36; field renamed `pairs_double_rated` |
 
-Not affected, checked explicitly: the ConsILR-2025 paper; `annotations.csv` (the 115-pair
+Not affected, checked explicitly: `annotations.csv` (the 115-pair
 evaluation set analysed in the companion papers, which carries no per-annotator repeats);
 `proverbs.csv`; `clusters.csv`; `people_metadata.csv`; the Zenodo record's own metadata
 and `CITATION.cff`; the project website, which describes the practice but quotes no
@@ -74,7 +74,7 @@ that worsens them, so the full chain is given for independent checking:
   (`core/annotation_quality.py`, `core/science.py`), after the 19 July deposit
 - `v19.36` — fixed `scripts/iaa_report.py`, which had continued to count rows
 - both values are reproducible from the deposited file alone; see
-  `journal_submission/draft/ERRATUM_corpus_v1.0.md`
+  `ERRATUM_corpus_v1.0.md` in this repository
 
 ### Consequence for the pre-registered release trigger
 
@@ -102,6 +102,6 @@ definitions were compared, and the row-counting one was found to be wrong.
   `repeat_judgments_superseded`, so the repeat volume is visible rather than folded in.
 - Every judgment now records the routing strategy that produced it, so agreement can be
   recomputed with any sampling strategy removed.
-- Manuscript figures are generated into LaTeX macros from the database
-  (`journal_submission/draft/make_numbers.py`) rather than typed, so a number in the
-  prose can always be re-derived.
+- Reported statistics are generated from a fingerprinted frozen snapshot by
+  `scripts/corpus_report.py` rather than transcribed, so any figure can be re-derived
+  from the database it came from.

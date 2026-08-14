@@ -86,7 +86,7 @@ they rely on fonts already present on the reader's system.
 
 The software was developed by the authors with the assistance of an AI coding
 assistant, used as a writing and implementation tool under our direction, review and
-testing. This is disclosed in the manuscript's acknowledgement of AI use. The
+testing. This is disclosed wherever the project's outputs are reported. The
 resulting work is our own in the sense that matters here: we specified it, we
 directed it, we tested it, we are responsible for it, and no part of it reproduces a
 third party's protected expression.

@@ -1,15 +1,19 @@
 #!/usr/bin/env python3
-"""Every number and figure in the paper, from one frozen corpus.
+"""Full analytical report for a frozen corpus snapshot.
 
-The manuscript previously mixed results computed on two different corpus versions. This
-script exists so that cannot happen again: it takes a single frozen database, computes
-everything the paper reports, and writes both the LaTeX macro file and the figures. If
-the corpus changes, one command regenerates the paper.
+Takes one immutable database and computes the complete set of corpus and annotation
+statistics: composition, attestation coverage, agreement and its confidence interval,
+intra-rater consistency, leave-one-rater-out robustness, the distribution of disagreement
+across the scale, similarity controls, threshold sensitivity, and cross-cultural coverage.
 
-    python scripts/paper_analysis.py --db data/frozen/corpus_YYYYMMDD.db \
-        --out ../journal_submission/draft
+Reading everything from a single frozen file is the point. A corpus under continuous
+annotation gives different answers on different days, so any set of statistics quoted
+together has to come from one snapshot with a recorded fingerprint.
 
-Figures are vector PDF, which the target journal accepts and prefers.
+    python scripts/corpus_report.py --db data/frozen/corpus_YYYYMMDD.db --out <dir>
+
+Writes a macro file and a JSON summary of every statistic, plus three vector PDF charts:
+disagreement by scale level, coverage distribution, and threshold sensitivity.
 """
 import argparse, collections, datetime, hashlib, json, os, statistics, subprocess, sys
 
@@ -314,7 +318,7 @@ def main():
     fig.savefig(os.path.join(figdir, "fig3_sensitivity.pdf"))
     plt.close(fig)
 
-    # ---------------------------------------------------------------- write macros
+    # ---------------------------------------------------------------- write outputs
     try:
         commit = subprocess.run(["git", "-C", REPO, "rev-parse", "--short", "HEAD"],
                                 capture_output=True, text=True, timeout=20).stdout.strip()

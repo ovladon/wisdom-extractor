@@ -135,7 +135,7 @@ def main():
         json.dump(cur, open(os.path.join(out, "manifest.json"), "w"), indent=2)
         print(f"\nExport prepared in {out} (proverbs.csv, annotations.csv, "
               f"consensus_pairs.csv, manifest.json). Nothing has been uploaded.")
-        print("Publish with journal_submission/zenodo_deposit/publish_corpus.sh after "
+        print("Publish with the deposit script after "
               "checking the files, then re-run with --record-release.")
 
     if args.record_release:
