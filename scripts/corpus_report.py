@@ -226,6 +226,33 @@ def main():
         return {k: (n, m / n) for k, (n, m) in acc.items()}, tot[1] / tot[0]
 
     cond, inter = _cond(plist)
+
+    # Chance correction. With an uneven marginal distribution a second reader lands on a
+    # common score by accident, so a raw match rate at the poles partly measures the score
+    # distribution rather than concordance between readers.
+    marg = collections.Counter(sc for v in plist for sc in v)
+    mtot = sum(marg.values())
+
+    # Self-consistency by interval. Most repeats arrive minutes apart, where reproducing
+    # an earlier score may be recall rather than stability.
+    seq2 = collections.defaultdict(list)
+    for c in cons:
+        seq2[(tuple(sorted((c["a_id"], c["b_id"]))), c["user"])].append(
+            ((c.get("created_at") or 0), c["score"]))
+    ev = []
+    for v in seq2.values():
+        if len(v) > 1:
+            v.sort()
+            for i in range(len(v) - 1):
+                ev.append((v[i + 1][0] - v[i][0], v[i][1], v[i + 1][1]))
+    long_ev = [e for e in ev if e[0] >= 600]
+    M["NSelfRepeatsLong"] = str(len(long_ev))
+    M["IntraExactLong"] = (f"{sum(1 for _g, a, b in long_ev if a == b)/len(long_ev)*100:.0f}"
+                           if long_ev else "n/a")
+    M["SelfRepeatMedianMin"] = (f"{sorted(e[0] for e in ev)[len(ev)//2]/60:.1f}"
+                                if ev else "n/a")
+    selfpairs = {k[0] for k, v in seq2.items() if len(v) > 1}
+    M["NBothMeasurable"] = str(len(selfpairs & set(dbl)))
     rng2 = _rnd.Random(7)
     bagg = collections.defaultdict(list); binter = []
     for _ in range(2000):
@@ -237,11 +264,21 @@ def main():
     M["InterExactLo"] = f"{np.percentile(binter,2.5)*100:.0f}"
     M["InterExactHi"] = f"{np.percentile(binter,97.5)*100:.0f}"
     M["IntraInterGap"] = f"{(float(M['IntraExact']) - inter*100):.1f}"
+    within = collections.defaultdict(lambda: [0, 0])
+    for v in plist:
+        for i in range(len(v)):
+            for j in range(len(v)):
+                if i != j:
+                    within[v[i]][0] += 1
+                    within[v[i]][1] += (abs(v[j] - v[i]) <= 1)
     for k in (4, 3, 2, 1, 0):
         if k in cond:
             n, v = cond[k]
             M[f"CondN{k}"] = str(n)
             M[f"CondPct{k}"] = f"{v*100:.0f}"
+            M[f"CondChance{k}"] = f"{marg[k]/mtot*100:.0f}"
+            M[f"CondExcess{k}"] = f"{v*100 - marg[k]/mtot*100:+.0f}"
+            M[f"CondWithin{k}"] = f"{within[k][1]/within[k][0]*100:.0f}"
             M[f"CondLo{k}"] = f"{np.percentile(bagg[k],2.5)*100:.0f}"
             M[f"CondHi{k}"] = f"{np.percentile(bagg[k],97.5)*100:.0f}"
     cond_plot = {k: (cond[k][1]*100, np.percentile(bagg[k],2.5)*100,
