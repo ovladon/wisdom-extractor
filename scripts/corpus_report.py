@@ -209,6 +209,44 @@ def main():
     M["NTimed"] = texnum(len(timed))
     M["MedianDecideSec"] = f"{timed[len(timed)//2]/1000:.1f}" if timed else "n/a"
 
+    # conditional agreement: anchor on one rater's actual score, look at the other.
+    # Not classified by any aggregate, so the estimate cannot inherit the circularity of
+    # assigning a pair to the median of the very scores whose spread is being measured.
+    import random as _rnd
+    plist = list(dbl.values())
+
+    def _cond(sample):
+        acc = collections.defaultdict(lambda: [0, 0]); tot = [0, 0]
+        for v in sample:
+            for i in range(len(v)):
+                for j in range(len(v)):
+                    if i != j:
+                        acc[v[i]][0] += 1; acc[v[i]][1] += (v[j] == v[i])
+                        tot[0] += 1; tot[1] += (v[j] == v[i])
+        return {k: (n, m / n) for k, (n, m) in acc.items()}, tot[1] / tot[0]
+
+    cond, inter = _cond(plist)
+    rng2 = _rnd.Random(7)
+    bagg = collections.defaultdict(list); binter = []
+    for _ in range(2000):
+        smp = [plist[rng2.randrange(len(plist))] for _ in range(len(plist))]
+        r, o = _cond(smp); binter.append(o)
+        for k, (n, v) in r.items():
+            bagg[k].append(v)
+    M["InterExact"] = f"{inter*100:.1f}"
+    M["InterExactLo"] = f"{np.percentile(binter,2.5)*100:.0f}"
+    M["InterExactHi"] = f"{np.percentile(binter,97.5)*100:.0f}"
+    M["IntraInterGap"] = f"{(float(M['IntraExact']) - inter*100):.1f}"
+    for k in (4, 3, 2, 1, 0):
+        if k in cond:
+            n, v = cond[k]
+            M[f"CondN{k}"] = str(n)
+            M[f"CondPct{k}"] = f"{v*100:.0f}"
+            M[f"CondLo{k}"] = f"{np.percentile(bagg[k],2.5)*100:.0f}"
+            M[f"CondHi{k}"] = f"{np.percentile(bagg[k],97.5)*100:.0f}"
+    cond_plot = {k: (cond[k][1]*100, np.percentile(bagg[k],2.5)*100,
+                     np.percentile(bagg[k],97.5)*100, cond[k][0]) for k in cond}
+
     # ---------------------------------------------------------------- representation
     print("vectorising corpus ...")
     withclaims = {r["id"]: r for r in list_proverbs(with_claims_only=True)}
@@ -284,24 +322,29 @@ def main():
 
     # ---------------------------------------------------------------- figures
     print("figures ...")
-    # Fig 1: where disagreement lives (the central finding)
-    fig, ax = plt.subplots(figsize=(6.2, 3.5))
+    # Fig 1: conditional agreement, the central finding
+    fig, ax = plt.subplots(figsize=(6.4, 3.6))
     ks = [4, 3, 2, 1, 0]
     xs = np.arange(len(ks))
-    pct = [levels[k][1] for k in ks]
-    ns = [levels[k][0] for k in ks]
-    bars = ax.bar(xs, pct, color=[PALETTE["accent"] if k in (4, 0) else PALETTE["warn"] for k in ks],
-                  width=0.62)
-    for x, b, n in zip(xs, bars, ns):
-        ax.text(x, b.get_height() + 2.5, f"n={n}", ha="center", fontsize=8,
-                color=PALETTE["mid"])
+    vals = [cond_plot[k][0] for k in ks]
+    lo = [vals[i] - cond_plot[k][1] for i, k in enumerate(ks)]
+    hi = [cond_plot[k][2] - vals[i] for i, k in enumerate(ks)]
+    bars = ax.bar(xs, vals, yerr=[lo, hi], capsize=4,
+                  color=[PALETTE["accent"] if k in (4, 0) else PALETTE["warn"] for k in ks],
+                  width=0.6, error_kw={"ecolor": PALETTE["mid"], "elinewidth": 1})
+    for x, k in zip(xs, ks):
+        ax.text(x, 3, f"n={cond_plot[k][3]}", ha="center", fontsize=7.5, color="white")
+    ax.axhline(float(M["IntraExact"]), color=PALETTE["ink"], linestyle=":", linewidth=1.2)
+    ax.text(len(ks) - 0.45, float(M["IntraExact"]) + 2,
+            f"same reader, twice: {M['IntraExact']}%", fontsize=8,
+            color=PALETTE["ink"], ha="right")
     ax.set_xticks(xs)
     ax.set_xticklabels(["4\nsame rule", "3\nsame advice", "2\nsame theme",
                         "1\nrelated,\ndifferent lesson", "0\nunrelated"], fontsize=8.5)
-    ax.set_ylabel("pairs contested (%)", fontsize=9.5)
-    ax.set_ylim(0, 108)
+    ax.set_ylabel("second reader gave the same score (%)", fontsize=9.5)
+    ax.set_ylim(0, 100)
     style(ax)
-    ax.set_title("Readers agree at the ends of the scale and diverge in its middle",
+    ax.set_title("Agreement is high at the ends of the scale and collapses in its middle",
                  fontsize=10.5, color=PALETTE["ink"], pad=10)
     fig.tight_layout()
     fig.savefig(os.path.join(figdir, "fig1_disagreement_by_level.pdf"))
