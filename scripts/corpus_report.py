@@ -39,6 +39,18 @@ def fingerprint(path):
     return h.hexdigest()[:16]
 
 
+DIGIT_WORD = str.maketrans("0123456789", "\u0000" * 10)
+_WORDS = {"0": "Zero", "1": "One", "2": "Two", "3": "Three", "4": "Four",
+          "5": "Five", "6": "Six", "7": "Seven", "8": "Eight", "9": "Nine"}
+
+
+def macro_name(key):
+    """LaTeX command names may contain letters only. A digit silently ends the name and
+    the rest becomes body text, which in a preamble raises 'Missing \\begin{document}'
+    and, under nonstopmode, still produces a PDF with wrong values in it."""
+    return "".join(_WORDS.get(ch, ch) for ch in key)
+
+
 def texnum(n):
     return "{,}".join(f"{int(n):,}".split(","))
 
@@ -187,6 +199,16 @@ def main():
             M[f"{tag}DiffSpread"] = f"{statistics.mean(diff):.2f}"
             M[f"{tag}P"] = f"{pv:.2f}"
 
+    # routing provenance and deliberation time
+    allc = list_constraints()
+    by_source = collections.Counter((c.get("source") or "organic").split(":")[0] for c in allc)
+    M["NCorroborated"] = texnum(by_source.get("corroborate", 0))
+    M["NChallenge"] = texnum(by_source.get("challenge", 0))
+    M["NOrganic"] = texnum(by_source.get("organic", 0))
+    timed = sorted(c["decide_ms"] for c in allc if c.get("decide_ms"))
+    M["NTimed"] = texnum(len(timed))
+    M["MedianDecideSec"] = f"{timed[len(timed)//2]/1000:.1f}" if timed else "n/a"
+
     # ---------------------------------------------------------------- representation
     print("vectorising corpus ...")
     withclaims = {r["id"]: r for r in list_proverbs(with_claims_only=True)}
@@ -245,7 +267,7 @@ def main():
         sweep.append((tau, len(set(lab)), sil, ari))
         print(f"  tau={tau}: {len(set(lab))} clusters, silhouette {sil:.3f}, ARI {ari:.3f}")
     for tau, nc, sil, ari in sweep:
-        t = str(tau).replace("0.", "")
+        t = f"{int(round(tau*100)):02d}"
         M[f"SweepK{t}"], M[f"SweepSil{t}"], M[f"SweepARI{t}"] = texnum(nc), f"{sil:.3f}", f"{ari:.3f}"
 
     print("clustering (full corpus) ...")
@@ -334,7 +356,7 @@ def main():
         f.write(f"% {os.path.basename(db)}  sha256:{M['NumbersDBFingerprint']}  "
                 f"code {commit}  {M['NumbersGenerated']}\n\n")
         for k, v in sorted(M.items()):
-            f.write(f"\\newcommand{{\\{k}}}{{{v}}}\n")
+            f.write(f"\\newcommand{{\\{macro_name(k)}}}{{{v}}}\n")
     print(f"\nwrote {path} ({len(M)} macros) and 3 figures in {figdir}")
     json.dump(M, open(os.path.join(out, "numbers.json"), "w"), indent=2)
 
