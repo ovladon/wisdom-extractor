@@ -968,7 +968,9 @@ if _sel == 9:
                "identification is imperfect — romanised non-English, OCR damage and "
                "glossary definitions can pass as English — so these are withheld from "
                "annotators until accepted here.")
-    from core.persistence import review_gloss, list_recent_exclusions
+    from core.persistence import (review_gloss, list_recent_exclusions,
+                                  edit_gloss, list_gloss_edits,
+                                  judgments_on_edited_glosses)
 
     _LIVE_SRC = "Live corpus (auto-synced from server)"
 
@@ -1025,9 +1027,12 @@ if _sel == 9:
         _OPTS = ["⏭ later", "✅ keep", "✖ drop gloss", "🗑 not a saying"]
         with st.form("gloss_review_batch"):
             _picks = {}
+            _edits = {}
             for _r in _pending[:_n]:
                 st.markdown(f"**{_r.get('people') or 'culture unknown'}**")
-                st.info(_r["gloss"])
+                _edits[_r["id"]] = st.text_area(
+                    "gloss shown to annotators", value=_r["gloss"], height=70,
+                    key=f"ge{_r['id']}", label_visibility="collapsed")
                 st.caption(f"source: {(_r.get('text') or '')[:220]}")
                 _picks[_r["id"]] = st.radio("outcome", _OPTS, key=f"gq{_r['id']}",
                                             horizontal=True, label_visibility="collapsed")
@@ -1035,6 +1040,13 @@ if _sel == 9:
             _apply = st.form_submit_button("Apply to all of the above")
         if _apply:
             _acts = []
+            _orig = {r["id"]: (r["gloss"] or "") for r in _pending[:_n]}
+            for _pid, _new in _edits.items():
+                if " ".join((_new or "").split()) != " ".join(_orig.get(_pid, "").split()) \
+                        and len((_new or "").strip()) >= 3:
+                    _acts.append({"pid": int(_pid), "action": "edit_gloss",
+                                  "gloss": " ".join(_new.split()), "user": user,
+                                  "reason": "corrected in gloss review"})
             for _pid, _choice in _picks.items():
                 if _choice == _OPTS[1]:
                     _acts.append({"pid": int(_pid), "action": "accept"})
@@ -1049,17 +1061,28 @@ if _sel == 9:
                 _kept = sum(1 for a in _acts if a["action"] == "accept")
                 _dropped = sum(1 for a in _acts if a["action"] == "reject")
                 _gone = sum(1 for a in _acts if a["action"] == "withdraw")
+                _fixed = _touched = 0
                 for _a in _acts:                      # mirror into the local copy
                     if _a["action"] == "accept":
                         review_gloss(_a["pid"], True)
                     elif _a["action"] == "reject":
                         review_gloss(_a["pid"], False)
+                    elif _a["action"] == "edit_gloss":
+                        _ok, _n = edit_gloss(_a["pid"], _a["gloss"], user=user,
+                                             reason=_a["reason"])
+                        _fixed += 1 if _ok else 0
+                        _touched += _n if _ok else 0
                     else:
                         mark_excluded(_a["pid"], True, user=user, reason=_a["reason"])
                 st.cache_data.clear()
-                st.session_state["_gloss_done"] = (
-                    f"{_kept} gloss(es) accepted · {_dropped} discarded · "
-                    f"{_gone} row(s) withdrawn from the corpus.")
+                _msg = (f"{_kept} gloss(es) accepted · {_dropped} discarded · "
+                        f"{_gone} row(s) withdrawn from the corpus.")
+                if _fixed:
+                    _msg += (f" {_fixed} gloss(es) corrected"
+                             + (f", affecting {_touched} judgment(s) made on the earlier "
+                                f"wording (recorded, excludable in analysis)."
+                                if _touched else " (no judgments affected)."))
+                st.session_state["_gloss_done"] = _msg
                 st.rerun()
 
     _recent = list_recent_exclusions(30)

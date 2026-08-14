@@ -81,6 +81,11 @@ def init_db():
       pid INTEGER, old_text TEXT, new_text TEXT, user TEXT,
       created_at REAL, applied INTEGER DEFAULT 0
     );
+    CREATE TABLE IF NOT EXISTS gloss_edits(
+      id INTEGER PRIMARY KEY AUTOINCREMENT,
+      pid INTEGER, old_gloss TEXT, new_gloss TEXT, old_source TEXT,
+      user TEXT, reason TEXT, judgments_before INTEGER, created_at REAL
+    );
     CREATE TABLE IF NOT EXISTS settings(
       key TEXT PRIMARY KEY,          -- operational knobs, editable from the Admin panel
       value TEXT,                    -- so the live server changes behaviour without a redeploy
@@ -500,6 +505,61 @@ def review_gloss(pid, accept=True):
     else:
         con.execute("UPDATE proverbs SET gloss=NULL, gloss_source=NULL WHERE id=?", (pid,))
     con.commit(); con.close()
+
+
+def edit_gloss(pid, new_gloss, user=None, reason=None):
+    """Correct the English rendering shown to annotators, keeping the old one.
+
+    The gloss is the text annotators actually compared, so changing it after judgments
+    exist means those judgments were made about wording that no longer appears in the
+    corpus. That is not a reason to forbid the edit: a mistranslated or truncated gloss
+    produces false ground truth, which is worse. It is a reason to record it. Every edit
+    stores the previous text and how many judgments already referenced the item, so an
+    analysis can exclude judgments that predate the wording they were made about.
+
+    Returns (ok, n_affected_judgments).
+    """
+    new_gloss = " ".join((new_gloss or "").split())
+    if len(new_gloss) < 3:
+        return False, 0
+    con = connect(); cur = con.cursor()
+    row = cur.execute("SELECT gloss, gloss_source FROM proverbs WHERE id=?", (pid,)).fetchone()
+    if row is None:
+        con.close(); return False, 0
+    old, old_source = row[0], row[1]
+    if (old or "").strip() == new_gloss:
+        con.close(); return False, 0
+    n = cur.execute("SELECT COUNT(*) FROM constraints WHERE a_id=? OR b_id=?",
+                    (pid, pid)).fetchone()[0]
+    cur.execute("INSERT INTO gloss_edits(pid, old_gloss, new_gloss, old_source, user, "
+                "reason, judgments_before, created_at) VALUES(?,?,?,?,?,?,?,?)",
+                (pid, old, new_gloss, old_source, user, reason, n, time.time()))
+    # claim is derived from the gloss, so it must be recomputed rather than left stale
+    cur.execute("UPDATE proverbs SET gloss=?, gloss_source='edited', claim=NULL WHERE id=?",
+                (new_gloss, pid))
+    con.commit(); con.close()
+    return True, n
+
+
+def list_gloss_edits(limit=50):
+    con = connect()
+    rows = con.execute(
+        "SELECT id, pid, old_gloss, new_gloss, user, reason, judgments_before, created_at "
+        "FROM gloss_edits ORDER BY created_at DESC LIMIT ?", (limit,)).fetchall()
+    con.close()
+    return [{"id": r[0], "pid": r[1], "old_gloss": r[2], "new_gloss": r[3], "user": r[4],
+             "reason": r[5], "judgments_before": r[6], "created_at": r[7]} for r in rows]
+
+
+def judgments_on_edited_glosses():
+    """Judgments made on an item before its gloss was edited: the set an analysis should
+    be able to exclude, because the annotator saw wording the corpus no longer shows."""
+    con = connect()
+    rows = con.execute(
+        "SELECT COUNT(*) FROM constraints c JOIN gloss_edits g "
+        "ON (c.a_id = g.pid OR c.b_id = g.pid) AND c.created_at < g.created_at").fetchone()
+    con.close()
+    return rows[0] if rows else 0
 
 
 def backfill_glosses():

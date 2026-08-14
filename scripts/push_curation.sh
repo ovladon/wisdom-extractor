@@ -27,7 +27,7 @@ set -euo pipefail
 cd /root/wisdom-extractor/deploy
 docker compose exec -T mobile python -c '
 import base64, json, sys
-from core.persistence import init_db, review_gloss, mark_excluded, connect
+from core.persistence import init_db, review_gloss, mark_excluded, edit_gloss, connect
 init_db()
 items = json.loads(base64.b64decode(sys.argv[1]).decode("utf-8"))
 con = connect()
@@ -44,6 +44,14 @@ for it in items:
         mark_excluded(pid, True, user=it.get("user"), reason=it.get("reason"))
     elif action == "restore":
         mark_excluded(pid, False)
+    elif action == "edit_gloss":
+        good, n = edit_gloss(pid, it.get("gloss", ""), user=it.get("user"),
+                             reason=it.get("reason"))
+        if not good:
+            print("  REJECTED gloss edit for pid %d (empty or unchanged)" % pid)
+            bad += 1; continue
+        if n:
+            print("  note: pid %d had %d judgment(s) on the earlier wording" % (pid, n))
     else:
         print("  UNKNOWN action %r for pid %d" % (action, pid)); bad += 1; continue
     ok += 1
