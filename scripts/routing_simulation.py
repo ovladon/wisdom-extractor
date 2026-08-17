@@ -83,6 +83,42 @@ def simulate(n_judgments, p_fixed=None, target=None, gain=0.5, cap=0.60,
             "history": history, "top_share_of_double": top_share}
 
 
+def simulate_fixed_overlap(n_judgments, overlap_frac, n_raters=12, seed=0,
+                           activity_skew=1.6, pool=4000):
+    """The standard alternative: designate a fixed subset up front, assign everyone to it.
+
+    Included because the adaptive scheme must be compared against what projects actually
+    do, not only against doing nothing. The overlap set is chosen before collection from a
+    fixed pool, so it is a uniform random sample of the pool, which is exactly the property
+    adaptive routing gives up.
+    """
+    rng = random.Random(seed)
+    weights = [1.0 / (i + 1) ** activity_skew for i in range(n_raters)]
+    n_overlap = max(1, int(pool * overlap_frac))
+    overlap = list(range(n_overlap))
+    fresh = list(range(n_overlap, pool))
+    judged = collections.defaultdict(set)
+    rng.shuffle(fresh)
+    fi = 0
+    for _ in range(n_judgments):
+        rater = rng.choices(range(n_raters), weights=weights, k=1)[0]
+        if rng.random() < overlap_frac:
+            cand = [q for q in overlap if rater not in judged[q]]
+            if cand:
+                judged[rng.choice(cand)].add(rater); continue
+        if fi < len(fresh):
+            judged[fresh[fi]].add(rater); fi += 1
+    n_pairs = len(judged)
+    dbl = [q for q, v in judged.items() if len(v) >= 2]
+    # representativeness: what share of the double-rated set comes from the designated
+    # overlap subset rather than from the corpus at large
+    from_overlap = sum(1 for q in dbl if q < n_overlap)
+    return {"pairs": n_pairs, "double": len(dbl),
+            "share": len(dbl) / n_pairs if n_pairs else 0.0,
+            "double_from_designated": from_overlap / len(dbl) if dbl else 0.0,
+            "distinct_items_double": len(dbl)}
+
+
 def main():
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
@@ -160,6 +196,32 @@ def main():
                  fontsize=10.5, color=PALETTE["ink"], pad=10)
     fig.tight_layout(); fig.savefig(os.path.join(out, "fig_routing_controller.pdf"))
     plt.close(fig)
+
+    # 4. the comparison that can go against us: adaptive routing versus a fixed
+    #    overlap set at matched budget and matched achieved double-rated share.
+    print("\nadaptive routing against a fixed overlap set, matched budget:")
+    comp = []
+    for t in (0.20, 0.35, 0.45):
+        ad = [simulate(args.judgments, target=t, seed=s_) for s_ in range(args.reps)]
+        fx = [simulate_fixed_overlap(args.judgments, overlap_frac=t / (1 + t), seed=s_)
+              for s_ in range(args.reps)]
+        row = {"target": t,
+               "adaptive_share": float(np.mean([x["share"] for x in ad])),
+               "adaptive_double": float(np.mean([x["double"] for x in ad])),
+               "adaptive_pairs": float(np.mean([x["pairs"] for x in ad])),
+               "fixed_share": float(np.mean([x["share"] for x in fx])),
+               "fixed_double": float(np.mean([x["double"] for x in fx])),
+               "fixed_pairs": float(np.mean([x["pairs"] for x in fx])),
+               "fixed_double_from_designated":
+                   float(np.mean([x["double_from_designated"] for x in fx]))}
+        comp.append(row)
+        print(f"  target {t:.2f} | adaptive: share {row['adaptive_share']:.3f}, "
+              f"{row['adaptive_double']:.0f} double of {row['adaptive_pairs']:.0f} items")
+        print(f"               | fixed   : share {row['fixed_share']:.3f}, "
+              f"{row['fixed_double']:.0f} double of {row['fixed_pairs']:.0f} items, "
+              f"{row['fixed_double_from_designated']*100:.0f}% of them from the "
+              f"designated subset")
+    res["comparison"] = comp
 
     json.dump(res, open(os.path.join(out, "routing_simulation.json"), "w"), indent=2)
     print(f"\nwrote routing_simulation.json and 2 figures in {out}")
