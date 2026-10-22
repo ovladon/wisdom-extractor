@@ -24,13 +24,27 @@ set -euo pipefail
 REF="$1"
 cd /root/wisdom-extractor
 
-# The server keeps local edits to deploy/Caddyfile (the real domain names). A pull that
-# would clobber them should stop here rather than take the site down for a hostname.
+# The production Caddyfile is intentionally server-local because it contains the real
+# hostnames. It may differ from the repository template, but nothing else may be dirty.
 if ! git diff --quiet -- . ':(exclude)deploy/Caddyfile'; then
   echo "!! server has uncommitted changes outside deploy/Caddyfile — refusing to deploy"
   git status --short
   exit 1
 fi
+
+validate_live_caddy() {
+  local file="$1"
+  if [ ! -s "$file" ]; then
+    echo "!! production Caddyfile is missing or empty — refusing to deploy" >&2
+    return 1
+  fi
+  if grep -Eq '(^|[[:space:]])(wisdom|annotate)\.example\.com([[:space:]]|$)' "$file"; then
+    echo "!! production Caddyfile still contains example.com placeholders — refusing to deploy" >&2
+    return 1
+  fi
+}
+
+validate_live_caddy deploy/Caddyfile
 
 PREV=$(git rev-parse HEAD)
 echo "current commit: $PREV"
@@ -65,11 +79,27 @@ PY
 deploy() {
   cd /root/wisdom-extractor
   git fetch --all --tags --quiet
-  git checkout --quiet -- deploy/Caddyfile 2>/dev/null || true
-  git stash push --quiet -- deploy/Caddyfile 2>/dev/null || true
-  git reset --hard --quiet "$1"
-  git stash pop --quiet 2>/dev/null || true
+
+  # Preserve the production-only Caddyfile BEFORE resetting the worktree. The old
+  # implementation checked it out from Git first and therefore replaced the real
+  # domains with wisdom.example.com / annotate.example.com.
+  local caddy_tmp
+  caddy_tmp=$(mktemp)
+  cp deploy/Caddyfile "$caddy_tmp"
+  validate_live_caddy "$caddy_tmp"
+
+  if ! git reset --hard --quiet "$1"; then
+    rm -f "$caddy_tmp"
+    return 1
+  fi
+
+  cp "$caddy_tmp" deploy/Caddyfile
+  rm -f "$caddy_tmp"
+  validate_live_caddy deploy/Caddyfile
+
   cd deploy
+  echo "validating production Caddy configuration..."
+  docker compose run --rm --no-deps caddy caddy validate --config /etc/caddy/Caddyfile
   docker compose up -d --build
 }
 
@@ -100,7 +130,7 @@ RMT
 echo
 echo "Verifying from outside..."
 sleep 3
-curl -s --max-time 20 https://annotate.wisdomextractor.com/api/config || {
-  echo "!! public endpoint did not answer — check Caddy on the server" >&2; exit 1; }
+curl -fsS --max-time 20 https://annotate.wisdomextractor.com/api/config || {
+  echo "!! public endpoint did not answer — check Caddy/TLS on the server" >&2; exit 1; }
 echo
 echo "Live."
